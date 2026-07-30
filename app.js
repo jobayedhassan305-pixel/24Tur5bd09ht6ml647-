@@ -80,47 +80,68 @@ class MiniApp {
     }
 
     closeAnnouncements() {
-        document.getElementById("popup-announcement-modal").classList.add("hidden");
+        document.getElementById("popup-announcement-modal")?.classList.add("hidden");
     }
 
     renderUIState() {
-        document.getElementById("user-name").innerText = this.user.first_name;
+        if (!this.user) return;
+
+        const userNameEl = document.getElementById("user-name");
+        if (userNameEl) userNameEl.innerText = this.user.first_name;
+
         if (this.user.photo_url) {
-            document.getElementById("user-avatar").src = this.user.photo_url;
-            document.getElementById("profile-img").src = this.user.photo_url;
+            const userAvatar = document.getElementById("user-avatar");
+            const profileImg = document.getElementById("profile-img");
+            if (userAvatar) userAvatar.src = this.user.photo_url;
+            if (profileImg) profileImg.src = this.user.photo_url;
         }
-        document.getElementById("profile-name").innerText = this.user.first_name;
-        document.getElementById("profile-id-tag").innerText = `ID: ${this.user.telegram_id}`;
+
+        const profileName = document.getElementById("profile-name");
+        const profileIdTag = document.getElementById("profile-id-tag");
+        if (profileName) profileName.innerText = this.user.first_name;
+        if (profileIdTag) profileIdTag.innerText = `ID: ${this.user.telegram_id}`;
 
         if (this.user.ff_uid) {
-            document.getElementById("prof-ff-uid").innerText = `FF UID: ${this.user.ff_uid}`;
-            document.getElementById("input-verify-uid").value = this.user.ff_uid;
+            const profFfUid = document.getElementById("prof-ff-uid");
+            const inputVerifyUid = document.getElementById("input-verify-uid");
+            if (profFfUid) profFfUid.innerText = `FF UID: ${this.user.ff_uid}`;
+            if (inputVerifyUid) inputVerifyUid.value = this.user.ff_uid;
         }
         if (this.user.whatsapp) {
-            document.getElementById("prof-wa").innerText = `WhatsApp: ${this.user.whatsapp}`;
-            document.getElementById("input-verify-wa").value = this.user.whatsapp;
+            const profWa = document.getElementById("prof-wa");
+            const inputVerifyWa = document.getElementById("input-verify-wa");
+            if (profWa) profWa.innerText = `WhatsApp: ${this.user.whatsapp}`;
+            if (inputVerifyWa) inputVerifyWa.value = this.user.whatsapp;
         }
 
         const badge = document.getElementById("unlock-badge");
-        if (this.isUnlocked) {
-            badge.className = "badge unlocked";
-            badge.innerText = "UNLOCKED 24H";
-        } else {
-            badge.className = "badge locked";
-            badge.innerText = "LOCKED";
+        if (badge) {
+            if (this.isUnlocked) {
+                badge.className = "badge unlocked";
+                badge.innerText = "UNLOCKED 24H";
+            } else {
+                badge.className = "badge locked";
+                badge.innerText = "LOCKED";
+            }
         }
 
-        if (this.role === "MAIN_ADMIN") {
-            document.getElementById("tab-admin").classList.remove("hidden");
-            this.loadAdminData();
-        } else {
-            document.getElementById("tab-admin").classList.add("hidden");
+        const tabAdmin = document.getElementById("tab-admin");
+        if (tabAdmin) {
+            if (this.role === "MAIN_ADMIN") {
+                tabAdmin.classList.remove("hidden");
+                this.loadAdminData();
+            } else {
+                tabAdmin.classList.add("hidden");
+            }
         }
 
-        if (this.role === "CREATOR" || this.role === "MAIN_ADMIN") {
-            document.getElementById("tab-creator").classList.remove("hidden");
-        } else {
-            document.getElementById("tab-creator").classList.add("hidden");
+        const tabCreator = document.getElementById("tab-creator");
+        if (tabCreator) {
+            if (this.role === "CREATOR" || this.role === "MAIN_ADMIN") {
+                tabCreator.classList.remove("hidden");
+            } else {
+                tabCreator.classList.add("hidden");
+            }
         }
 
         this.loadMySquads();
@@ -135,17 +156,17 @@ class MiniApp {
             });
         });
 
-        document.getElementById("form-leader-registration").addEventListener("submit", (e) => {
+        document.getElementById("form-leader-registration")?.addEventListener("submit", (e) => {
             e.preventDefault();
             this.handleLeaderRegistration();
         });
 
-        document.getElementById("form-create-tournament").addEventListener("submit", (e) => {
+        document.getElementById("form-create-tournament")?.addEventListener("submit", (e) => {
             e.preventDefault();
             this.handleCreateTournament();
         });
 
-        document.getElementById("form-user-verify").addEventListener("submit", (e) => {
+        document.getElementById("form-user-verify")?.addEventListener("submit", (e) => {
             e.preventDefault();
             this.handleUserVerification();
         });
@@ -153,14 +174,15 @@ class MiniApp {
 
     navigate(viewId) {
         document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
-        document.getElementById(viewId).classList.add("active");
+        const targetView = document.getElementById(viewId);
+        if (targetView) targetView.classList.add("active");
         if (viewId === "view-profile") this.loadMySquads();
     }
 
     async handleUserVerification() {
         const payload = {
-            ff_uid: document.getElementById("input-verify-uid").value.trim(),
-            whatsapp_number: document.getElementById("input-verify-wa").value.trim()
+            ff_uid: document.getElementById("input-verify-uid")?.value.trim(),
+            whatsapp_number: document.getElementById("input-verify-wa")?.value.trim()
         };
 
         const res = await fetch(`${CONFIG.API_BASE}/user/verify`, {
@@ -180,6 +202,8 @@ class MiniApp {
 
     async loadTournaments() {
         const container = document.getElementById("tournament-list");
+        if (!container) return;
+
         try {
             const res = await fetch(`${CONFIG.API_BASE}/tournaments`);
             const data = await res.json();
@@ -229,20 +253,28 @@ class MiniApp {
     }
 
     openTournamentDetail(tId) {
-        const t = window.tournamentCache.find(x => x.id === tId);
+        const t = window.tournamentCache?.find(x => x.id === tId);
         if (!t) return;
         this.activeTournament = t;
-        document.getElementById("reg-tournament-id").value = t.id;
-        document.getElementById("tournament-detail-card").innerHTML = `
-            <h2>${t.title}</h2>
-            <p><strong>Lobby Progress:</strong> ${t.total_joined_players}/${t.max_players} Players Joined</p>
-            <p class="margin-top"><strong>Rules:</strong> ${t.rules}</p>
-        `;
+        
+        const regInput = document.getElementById("reg-tournament-id");
+        if (regInput) regInput.value = t.id;
+
+        const card = document.getElementById("tournament-detail-card");
+        if (card) {
+            card.innerHTML = `
+                <h2>${t.title}</h2>
+                <p><strong>Lobby Progress:</strong> ${t.total_joined_players}/${t.max_players} Players Joined</p>
+                <p class="margin-top"><strong>Rules:</strong> ${t.rules}</p>
+            `;
+        }
         this.navigate("view-details");
     }
 
     async showRegisteredSquads() {
         const box = document.getElementById("registered-squads-box");
+        if (!box) return;
+
         box.classList.remove("hidden");
         box.innerHTML = "<h4>Registered Squads</h4>";
         const t = this.activeTournament;
@@ -264,17 +296,17 @@ class MiniApp {
     }
 
     async handleLeaderRegistration() {
-        if (!this.user.ff_uid) {
+        if (!this.user?.ff_uid) {
             alert("⚠️ আগে আপনার প্রোফাইলে গিয়ে Free Fire UID দিয়ে ভেরিফাই করুন!");
             this.navigate("view-profile");
             return;
         }
 
         const payload = {
-            tournament_id: document.getElementById("reg-tournament-id").value,
-            squad_name: document.getElementById("reg-squad-name").value,
-            p1_nickname: document.getElementById("p1-nick").value,
-            p1_ff_id: document.getElementById("p1-id").value
+            tournament_id: document.getElementById("reg-tournament-id")?.value,
+            squad_name: document.getElementById("reg-squad-name")?.value,
+            p1_nickname: document.getElementById("p1-nick")?.value,
+            p1_ff_id: document.getElementById("p1-id")?.value
         };
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/register-leader`, {
@@ -291,16 +323,16 @@ class MiniApp {
     }
 
     async submitJoinSquad() {
-        if (!this.user.ff_uid) {
+        if (!this.user?.ff_uid) {
             alert("⚠️ আগে প্রোফাইল ট্যাবে গিয়ে আপনার FF UID সেভ করুন!");
             this.navigate("view-profile");
             return;
         }
 
         const payload = {
-            squad_code: document.getElementById("join-sq-code").value.trim(),
-            nickname: document.getElementById("join-p-nick").value.trim(),
-            ff_id: document.getElementById("join-p-uid").value.trim()
+            squad_code: document.getElementById("join-sq-code")?.value.trim(),
+            nickname: document.getElementById("join-p-nick")?.value.trim(),
+            ff_id: document.getElementById("join-p-uid")?.value.trim()
         };
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/join-squad`, {
@@ -317,7 +349,6 @@ class MiniApp {
     }
 
     startRedirectSequence(linkUrl, msgText) {
-        // সাব-এডমিনের দেয়া লিংকে রিডাইরেক্ট এবং ৭ সেকেন্ড ওয়েটিং
         const win = window.open(linkUrl, "_blank");
         if (!win) {
             window.location.href = linkUrl;
@@ -326,16 +357,16 @@ class MiniApp {
         let sec = 7;
         const overlay = document.getElementById("redirect-countdown-overlay");
         const timerText = document.getElementById("redirect-timer-text");
-        overlay.classList.remove("hidden");
-        timerText.innerText = `সাব-এডমিনের লিংকে রিডাইরেক্ট হচ্ছে... ${sec} সেকেন্ড অপেক্ষা করুন`;
+        if (overlay) overlay.classList.remove("hidden");
+        if (timerText) timerText.innerText = `সাব-এডমিনের লিংকে রিডাইরেক্ট হচ্ছে... ${sec} সেকেন্ড অপেক্ষা করুন`;
 
         clearInterval(this.redirectTimer);
         this.redirectTimer = setInterval(() => {
             sec--;
-            timerText.innerText = `রেজিস্ট্রেশন কনফার্ম করা হচ্ছে... ${sec}s`;
+            if (timerText) timerText.innerText = `রেজিস্ট্রেশন কনফার্ম করা হচ্ছে... ${sec}s`;
             if (sec <= 0) {
                 clearInterval(this.redirectTimer);
-                overlay.classList.add("hidden");
+                if (overlay) overlay.classList.add("hidden");
                 alert(msgText);
                 this.loadTournaments();
                 this.navigate("view-home");
@@ -345,7 +376,7 @@ class MiniApp {
 
     async loadMySquads() {
         const container = document.getElementById("my-squads-list");
-        if (!container) return;
+        if (!container || !this.user) return;
         try {
             const res = await fetch(`${CONFIG.API_BASE}/user/my-squads`, {
                 headers: { "X-TG-ID": this.user.telegram_id.toString() }
@@ -435,12 +466,12 @@ class MiniApp {
         e.preventDefault();
         const payload = {
             telegram_id: this.user.telegram_id,
-            squad_name: document.getElementById("cp-squad-name").value,
-            description: document.getElementById("cp-desc").value,
-            player_roles: document.getElementById("cp-roles").value,
-            youtube: document.getElementById("cp-yt").value,
-            facebook: document.getElementById("cp-fb").value,
-            tiktok: document.getElementById("cp-tk").value
+            squad_name: document.getElementById("cp-squad-name")?.value,
+            description: document.getElementById("cp-desc")?.value,
+            player_roles: document.getElementById("cp-roles")?.value,
+            youtube: document.getElementById("cp-yt")?.value,
+            facebook: document.getElementById("cp-fb")?.value,
+            tiktok: document.getElementById("cp-tk")?.value
         };
 
         const res = await fetch(`${CONFIG.API_BASE}/creator/profile`, {
@@ -453,13 +484,13 @@ class MiniApp {
 
     async handleCreateTournament() {
         const payload = {
-            title: document.getElementById("cr-title").value,
-            code: document.getElementById("cr-code").value,
-            prize: document.getElementById("cr-prize").value,
-            task_description: document.getElementById("cr-task-desc").value,
-            task_link: document.getElementById("cr-task-link").value,
-            rules: document.getElementById("cr-rules").value,
-            start_time: document.getElementById("cr-time").value
+            title: document.getElementById("cr-title")?.value,
+            code: document.getElementById("cr-code")?.value,
+            prize: document.getElementById("cr-prize")?.value,
+            task_description: document.getElementById("cr-task-desc")?.value,
+            task_link: document.getElementById("cr-task-link")?.value,
+            rules: document.getElementById("cr-rules")?.value,
+            start_time: document.getElementById("cr-time")?.value
         };
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/create`, {
@@ -483,13 +514,13 @@ class MiniApp {
             document.getElementById("host-roles").innerText = host.player_roles || "N/A";
             
             const yt = document.getElementById("host-yt");
-            if (host.youtube) { yt.href = host.youtube; yt.classList.remove("hidden"); } else { yt.classList.add("hidden"); }
+            if (yt) { if (host.youtube) { yt.href = host.youtube; yt.classList.remove("hidden"); } else { yt.classList.add("hidden"); } }
             
             const fb = document.getElementById("host-fb");
-            if (host.facebook) { fb.href = host.facebook; fb.classList.remove("hidden"); } else { fb.classList.add("hidden"); }
+            if (fb) { if (host.facebook) { fb.href = host.facebook; fb.classList.remove("hidden"); } else { fb.classList.add("hidden"); } }
 
             const tk = document.getElementById("host-tk");
-            if (host.tiktok) { tk.href = host.tiktok; tk.classList.remove("hidden"); } else { tk.classList.add("hidden"); }
+            if (tk) { if (host.tiktok) { tk.href = host.tiktok; tk.classList.remove("hidden"); } else { tk.classList.add("hidden"); } }
 
             this.navigate("view-host-profile");
         }
@@ -511,42 +542,47 @@ class MiniApp {
 
             // Render Announcements
             const annContainer = document.getElementById("adm-announcements-list");
-            annContainer.innerHTML = "";
-            data.announcements.forEach(a => {
-                annContainer.innerHTML += `
-                    <div class="player-box margin-top">
-                        ${a.image_url ? `<img src="${a.image_url}" style="max-width:100%; border-radius:8px;">` : ''}
-                        <p>${a.text}</p>
-                        <button class="btn-secondary full-width margin-top" onclick="app.deleteAnnouncement('${a.id}')">🗑 Delete Pop-up Notice</button>
-                    </div>
-                `;
-            });
+            if (annContainer) {
+                annContainer.innerHTML = "";
+                data.announcements.forEach(a => {
+                    annContainer.innerHTML += `
+                        <div class="player-box margin-top">
+                            ${a.image_url ? `<img src="${a.image_url}" style="max-width:100%; border-radius:8px;">` : ''}
+                            <p>${a.text}</p>
+                            <button class="btn-secondary full-width margin-top" onclick="app.deleteAnnouncement('${a.id}')">🗑 Delete Pop-up Notice</button>
+                        </div>
+                    `;
+                });
+            }
 
             // Render Sub-Admins
             const crContainer = document.getElementById("adm-creators-list");
-            crContainer.innerHTML = "";
-            data.creators.forEach(c => {
-                crContainer.innerHTML += `
-                    <div class="player-box">
-                        <strong>${c.squad_name}</strong> (ID: ${c.telegram_id})
-                        <button class="btn-secondary full-width margin-top" onclick="app.removeCreatorByAdmin(${c.telegram_id})">❌ Remove Host Role</button>
-                    </div>
-                `;
-            });
+            if (crContainer) {
+                crContainer.innerHTML = "";
+                data.creators.forEach(c => {
+                    crContainer.innerHTML += `
+                        <div class="player-box">
+                            <strong>${c.squad_name}</strong> (ID: ${c.telegram_id})
+                            <button class="btn-secondary full-width margin-top" onclick="app.removeCreatorByAdmin(${c.telegram_id})">❌ Remove Host Role</button>
+                        </div>
+                    `;
+                });
+            }
 
             this.filterAdminUsers();
         }
     }
 
     filterAdminUsers() {
-        const query = (document.getElementById("adm-user-search").value || "").toLowerCase().trim();
+        const query = (document.getElementById("adm-user-search")?.value || "").toLowerCase().trim();
         const usrContainer = document.getElementById("adm-users-list");
+        if (!usrContainer) return;
         usrContainer.innerHTML = "";
 
         if (!window.allAdminUsers) return;
 
         window.allAdminUsers.forEach(u => {
-            const isBanned = window.allBannedUsers.includes(u.telegram_id);
+            const isBanned = window.allBannedUsers?.includes(u.telegram_id);
             const isMainAdmin = (u.telegram_id === 8908999062);
 
             const matchName = (u.first_name || "").toLowerCase().includes(query);
@@ -572,8 +608,8 @@ class MiniApp {
     }
 
     async publishAnnouncement() {
-        const text = document.getElementById("adm-popup-msg").value.trim();
-        const img = document.getElementById("adm-popup-img").value.trim();
+        const text = document.getElementById("adm-popup-msg")?.value.trim();
+        const img = document.getElementById("adm-popup-img")?.value.trim();
         if (!text) {
             alert("পপ-আপ এর টেক্সট মেসেজ লিখুন!");
             return;
@@ -600,8 +636,8 @@ class MiniApp {
 
     async addCreatorByAdmin() {
         const payload = {
-            telegram_id: parseInt(document.getElementById("adm-cr-id").value),
-            squad_name: document.getElementById("adm-cr-name").value
+            telegram_id: parseInt(document.getElementById("adm-cr-id")?.value),
+            squad_name: document.getElementById("adm-cr-name")?.value
         };
         await fetch(`${CONFIG.API_BASE}/admin/creators/save`, {
             method: "POST",
@@ -647,24 +683,3 @@ class MiniApp {
 window.addEventListener("DOMContentLoaded", () => {
     window.app = new MiniApp();
 });
-, "X-TG-ID": this.user.telegram_id.toString() },
-            body: JSON.stringify({ telegram_id: tgId })
-        });
-        this.loadAdminData();
-    }
-
-    async unbanUserByAdmin(tgId) {
-        await fetch(`${CONFIG.API_BASE}/admin/users/unban`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
-            body: JSON.stringify({ telegram_id: tgId })
-        });
-        this.loadAdminData();
-    }
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-    window.app = new MiniApp();
-});
-
-
