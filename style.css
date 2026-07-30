@@ -1,13 +1,12 @@
-```css
 :root {
-    --bg-primary: #0b0e14;
-    --bg-secondary: #151a23;
+    --bg-primary: #0f141c;
+    --bg-secondary: #1a212d;
     --accent-orange: #ff4500;
     --accent-gold: #ffb700;
-    --text-main: #f0f2f5;
-    --text-muted: #8a94a6;
-    --glass-surface: rgba(21, 26, 35, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-main: #ffffff; /* টেক্সট সম্পূর্ণ পরিষ্কার দেখার জন্য pure white করা হয়েছে */
+    --text-muted: #a0aec0; /* ঝাপসা কাটাতে হালকা কালার বৃদ্ধি */
+    --glass-surface: rgba(26, 33, 45, 0.95); /* ট্রান্সপারেন্সি কমিয়ে স্পষ্ট করা হয়েছে */
+    --glass-border: rgba(255, 255, 255, 0.15);
     --radius-lg: 16px;
     --radius-md: 10px;
     --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -33,7 +32,7 @@ body {
 #app-container {
     width: 100%;
     max-width: 480px;
-    background: radial-gradient(circle at top, #1c2333 0%, var(--bg-primary) 70%);
+    background: #0f141c; /* অতি-অন্ধকার রেডিয়াল গ্রেডিয়েন্ট সরিয়ে সলিড পরিষ্কার ব্যাকগ্রাউন্ড দেওয়া হয়েছে */
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -45,8 +44,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 16px;
-    background: var(--glass-surface);
-    backdrop-filter: blur(12px);
+    background: var(--bg-secondary); /* ঝাপসা ভাব দূর করতে সলিড ব্যাকগ্রাউন্ড */
     border-bottom: 1px solid var(--glass-border);
     position: sticky;
     top: 0;
@@ -69,6 +67,7 @@ body {
 .username {
     font-weight: 700;
     font-size: 0.9rem;
+    color: var(--text-main);
 }
 
 .badge {
@@ -109,7 +108,7 @@ body {
 /* NAVIGATION TABS */
 .tab-bar {
     display: flex;
-    background: var(--bg-secondary);
+    background: #141a24;
     border-bottom: 1px solid var(--glass-border);
     overflow-x: auto;
 }
@@ -156,10 +155,10 @@ body {
 .glass-card {
     background: var(--glass-surface);
     border: 1px solid var(--glass-border);
-    backdrop-filter: blur(8px);
     border-radius: var(--radius-lg);
     padding: 16px;
     margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* কার্ড স্পষ্ট করার জন্য শেডো যোগ করা হয়েছে */
 }
 
 .card-grid {
@@ -183,7 +182,7 @@ body {
     font-size: 1.1rem;
     font-weight: 700;
     margin: 6px 0;
-    color: #fff;
+    color: #ffffff;
 }
 
 .tournament-meta {
@@ -209,8 +208,8 @@ body {
 }
 
 input, select, textarea {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--glass-border);
+    background: #090c10; /* ইনপুট ফিল্ড সহজে দেখার জন্য ডার্ক ব্যাকগ্রাউন্ড */
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: var(--radius-md);
     padding: 10px 12px;
     color: var(--text-main);
@@ -223,7 +222,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .player-box {
-    background: rgba(0, 0, 0, 0.25);
+    background: #111622;
     border: 1px dashed var(--glass-border);
     padding: 12px;
     border-radius: var(--radius-md);
@@ -252,7 +251,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.12);
     color: var(--text-main);
     border: 1px solid var(--glass-border);
     font-weight: 600;
@@ -310,7 +309,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .stat-card {
-    background: rgba(0, 0, 0, 0.3);
+    background: #111622;
     padding: 10px;
     border-radius: var(--radius-md);
     text-align: center;
@@ -333,7 +332,7 @@ input:focus, select:focus, textarea:focus {
     margin-top: 10px;
     line-height: 1.6;
     font-size: 0.85rem;
-    color: #ccc;
+    color: #e2e8f0;
 }
 
 /* MODAL OVERLAY */
@@ -343,7 +342,7 @@ input:focus, select:focus, textarea:focus {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -386,11 +385,9 @@ input:focus, select:focus, textarea:focus {
 }
 
 .style-badge {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.1);
     padding: 4px 8px;
     border-radius: 6px;
     display: inline-block;
     margin: 2px 0;
 }
-
-```
