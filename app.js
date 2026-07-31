@@ -7,7 +7,8 @@ class MiniApp {
         this.role = "USER";
         this.isUnlocked = false;
         this.activeTournament = null;
-        this.redirectTimer = null;
+        this.taskRedirectTimer = null;
+        this.pendingRegData = null;
 
         this.initTelegram();
         this.bindEvents();
@@ -50,6 +51,7 @@ class MiniApp {
                 this.isUnlocked = data.is_unlocked;
                 this.renderUIState();
                 this.loadTournaments();
+                this.loadAboutContent();
                 
                 if (data.announcements && data.announcements.length > 0) {
                     this.showAnnouncementsModal(data.announcements);
@@ -60,6 +62,15 @@ class MiniApp {
         } catch (err) {
             console.error("Bootstrap error:", err);
         }
+    }
+
+    // Lock Guard: Checks 24h Unlock Access
+    checkUnlockGuard() {
+        if (!this.isUnlocked) {
+            alert("🔒 এই সুবিধাটি পেতে প্রথমে উপরে 'Unlock 24h Access' বাটনে ক্লিক করে আনলক করুন!");
+            return false;
+        }
+        return true;
     }
 
     showAnnouncementsModal(list) {
@@ -145,6 +156,7 @@ class MiniApp {
         }
 
         this.loadMySquads();
+        this.loadUserHistory();
     }
 
     bindEvents() {
@@ -176,10 +188,18 @@ class MiniApp {
         document.querySelectorAll(".view-panel").forEach(p => p.classList.remove("active"));
         const targetView = document.getElementById(viewId);
         if (targetView) targetView.classList.add("active");
-        if (viewId === "view-profile") this.loadMySquads();
+        if (viewId === "view-profile") {
+            this.loadMySquads();
+            this.loadUserHistory();
+        }
+        if (viewId === "view-about") {
+            this.loadAboutContent();
+        }
     }
 
     async handleUserVerification() {
+        if (!this.checkUnlockGuard()) return;
+
         const payload = {
             ff_uid: document.getElementById("input-verify-uid")?.value.trim(),
             whatsapp_number: document.getElementById("input-verify-wa")?.value.trim()
@@ -288,7 +308,7 @@ class MiniApp {
             let membersList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id}) - ${m.role}</li>`).join("");
             box.innerHTML += `
                 <div class="player-box margin-top">
-                    <strong>${sq.squad_name}</strong> (Code: <code>${sq.squad_code}</code>)
+                    <strong>${sq.squad_name}</strong>
                     <ul class="sub-text margin-top">${membersList}</ul>
                 </div>
             `;
@@ -296,6 +316,8 @@ class MiniApp {
     }
 
     async handleLeaderRegistration() {
+        if (!this.checkUnlockGuard()) return;
+
         if (!this.user?.ff_uid) {
             alert("⚠️ আগে আপনার প্রোফাইলে গিয়ে Free Fire UID দিয়ে ভেরিফাই করুন!");
             this.navigate("view-profile");
@@ -316,13 +338,15 @@ class MiniApp {
         });
         const data = await res.json();
         if (res.ok) {
-            this.startRedirectSequence(data.task_link, `🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}`);
+            this.openEmbeddedTask(data.task_link, `🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}`);
         } else {
             alert(`⚠️ ${data.detail}`);
         }
     }
 
     async submitJoinSquad() {
+        if (!this.checkUnlockGuard()) return;
+
         if (!this.user?.ff_uid) {
             alert("⚠️ আগে প্রোফাইল ট্যাবে গিয়ে আপনার FF UID সেভ করুন!");
             this.navigate("view-profile");
@@ -342,36 +366,53 @@ class MiniApp {
         });
         const data = await res.json();
         if (res.ok) {
-            this.startRedirectSequence(data.task_link, "✅ স্কোয়াডে জয়েন সম্পূর্ণ হয়েছে!");
+            this.openEmbeddedTask(data.task_link, "✅ স্কোয়াডে জয়েন সম্পূর্ণ হয়েছে!");
         } else {
             alert(`⚠️ ${data.detail}`);
         }
     }
 
-    startRedirectSequence(linkUrl, msgText) {
-        const win = window.open(linkUrl, "_blank");
-        if (!win) {
-            window.location.href = linkUrl;
-        }
-        
-        let sec = 7;
-        const overlay = document.getElementById("redirect-countdown-overlay");
-        const timerText = document.getElementById("redirect-timer-text");
-        if (overlay) overlay.classList.remove("hidden");
-        if (timerText) timerText.innerText = `সাব-এডমিনের লিংকে রিডাইরেক্ট হচ্ছে... ${sec} সেকেন্ড অপেক্ষা করুন`;
+    // Opens WebView Inside Mini App with 10-second timer
+    openEmbeddedTask(linkUrl, successMsg) {
+        this.pendingRegData = { successMsg };
+        const modal = document.getElementById("embedded-task-modal");
+        const iframe = document.getElementById("task-iframe");
+        const btn = document.getElementById("btn-embedded-confirm");
 
-        clearInterval(this.redirectTimer);
-        this.redirectTimer = setInterval(() => {
+        if (iframe) iframe.src = linkUrl;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerText = "Please wait (10s)...";
+        }
+        if (modal) modal.classList.remove("hidden");
+
+        let sec = 10;
+        clearInterval(this.taskRedirectTimer);
+        this.taskRedirectTimer = setInterval(() => {
             sec--;
-            if (timerText) timerText.innerText = `রেজিস্ট্রেশন কনফার্ম করা হচ্ছে... ${sec}s`;
+            if (btn) btn.innerText = `Please wait (${sec}s)...`;
             if (sec <= 0) {
-                clearInterval(this.redirectTimer);
-                if (overlay) overlay.classList.add("hidden");
-                alert(msgText);
-                this.loadTournaments();
-                this.navigate("view-home");
+                clearInterval(this.taskRedirectTimer);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = "Registration Now (Confirm)";
+                }
             }
         }, 1000);
+    }
+
+    completeTaskRegistration() {
+        const modal = document.getElementById("embedded-task-modal");
+        if (modal) modal.classList.add("hidden");
+        const iframe = document.getElementById("task-iframe");
+        if (iframe) iframe.src = "";
+
+        if (this.pendingRegData) {
+            alert(this.pendingRegData.successMsg);
+            this.pendingRegData = null;
+        }
+        this.loadTournaments();
+        this.navigate("view-home");
     }
 
     async loadMySquads() {
@@ -393,7 +434,8 @@ class MiniApp {
                 container.innerHTML += `
                     <div class="player-box margin-top">
                         <div><strong>${sq.squad_name}</strong></div>
-                        <div class="sub-text">Code: <code>${sq.squad_code}</code></div>
+                        <!-- Leader Security: Code only visible to squad leader -->
+                        <div class="sub-text" style="color:var(--accent-orange);">Private Code: <code>${sq.squad_code}</code></div>
                         <ul class="sub-text">${mList}</ul>
                         <button class="btn-secondary full-width margin-top" onclick="app.deleteMySquad('${sq.squad_code}')">❌ Delete Squad</button>
                     </div>
@@ -404,8 +446,39 @@ class MiniApp {
         }
     }
 
+    async loadUserHistory() {
+        const container = document.getElementById("joined-history-list");
+        if (!container || !this.user) return;
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}/user/history`, {
+                headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            });
+            const data = await res.json();
+            container.innerHTML = "";
+
+            if (!data.history || data.history.length === 0) {
+                container.innerHTML = `<p class="sub-text">আপনি এখনো কোনো টুর্নামেন্টে অংশ নেননি।</p>`;
+                return;
+            }
+
+            data.history.forEach(item => {
+                container.innerHTML += `
+                    <div class="player-box margin-top">
+                        <div><strong>${item.tournament_title}</strong></div>
+                        <div class="sub-text">Squad: ${item.squad_name}</div>
+                        <div class="sub-text">Joined At: ${item.joined_at}</div>
+                    </div>
+                `;
+            });
+        } catch (err) {
+            container.innerHTML = `<p class="sub-text">History unavailable.</p>`;
+        }
+    }
+
     async deleteMySquad(sqCode) {
+        if (!this.checkUnlockGuard()) return;
         if (!confirm("আপনি কি নিশ্চিত আপনার স্কোয়াডটি ডিলিট করতে চান?")) return;
+        
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/squad/${sqCode}`, {
             method: "DELETE",
             headers: { "X-TG-ID": this.user.telegram_id.toString() }
@@ -442,6 +515,8 @@ class MiniApp {
     }
 
     async triggerStartMatch(tId) {
+        if (!this.checkUnlockGuard()) return;
+
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/start-match`, {
             method: "POST",
             headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
@@ -454,7 +529,9 @@ class MiniApp {
     }
 
     async deleteTournament(tId) {
+        if (!this.checkUnlockGuard()) return;
         if (!confirm("Are you sure you want to delete this tournament?")) return;
+        
         await fetch(`${CONFIG.API_BASE}/tournaments/${tId}`, {
             method: "DELETE",
             headers: { "X-TG-ID": this.user.telegram_id.toString() }
@@ -464,6 +541,8 @@ class MiniApp {
 
     async saveHostProfile(e) {
         e.preventDefault();
+        if (!this.checkUnlockGuard()) return;
+
         const payload = {
             telegram_id: this.user.telegram_id,
             squad_name: document.getElementById("cp-squad-name")?.value,
@@ -483,6 +562,8 @@ class MiniApp {
     }
 
     async handleCreateTournament() {
+        if (!this.checkUnlockGuard()) return;
+
         const payload = {
             title: document.getElementById("cr-title")?.value,
             code: document.getElementById("cr-code")?.value,
@@ -523,6 +604,35 @@ class MiniApp {
             if (tk) { if (host.tiktok) { tk.href = host.tiktok; tk.classList.remove("hidden"); } else { tk.classList.add("hidden"); } }
 
             this.navigate("view-host-profile");
+        }
+    }
+
+    // About Us Content Load & Update
+    async loadAboutContent() {
+        const aboutBox = document.getElementById("about-page-content");
+        const admAboutBox = document.getElementById("adm-about-text");
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}/about`);
+            const data = await res.json();
+            if (aboutBox) aboutBox.innerText = data.content || "Welcome to Free Fire Esports Platform!";
+            if (admAboutBox && !admAboutBox.value) admAboutBox.value = data.content || "";
+        } catch (err) {
+            if (aboutBox) aboutBox.innerText = "Welcome to Free Fire Esports Engine!";
+        }
+    }
+
+    async updateAboutContent() {
+        const text = document.getElementById("adm-about-text")?.value.trim();
+        if (!text) return alert("লেখা ফাঁকা রাখা যাবে না!");
+
+        const res = await fetch(`${CONFIG.API_BASE}/admin/about`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            body: JSON.stringify({ content: text })
+        });
+        if (res.ok) {
+            alert("✅ About Us Page Updated!");
+            this.loadAboutContent();
         }
     }
 
@@ -593,8 +703,17 @@ class MiniApp {
                 usrContainer.innerHTML += `
                     <div class="player-box">
                         <div><strong>${u.first_name}</strong> (@${u.username || 'N/A'}) ${isMainAdmin ? '👑 (Main Admin)' : ''}</div>
-                        <div class="sub-text">TG ID: ${u.telegram_id} | FF UID: ${u.ff_uid || 'Not Set'}</div>
-                        <div class="sub-text">WhatsApp: ${u.whatsapp || 'Not Set'}</div>
+                        <div class="sub-text">
+                            TG ID: ${u.telegram_id}
+                        </div>
+                        <div class="sub-text">
+                            FF UID: ${u.ff_uid || 'Not Set'}
+                            ${u.ff_uid ? `<button class="btn-secondary" style="padding:2px 8px; font-size:11px; margin-left:5px;" onclick="app.copyToClipboard('${u.ff_uid}')">📋 Copy</button>` : ''}
+                        </div>
+                        <div class="sub-text">
+                            WhatsApp: ${u.whatsapp || 'Not Set'}
+                            ${u.whatsapp ? `<button class="btn-secondary" style="padding:2px 8px; font-size:11px; margin-left:5px;" onclick="app.copyToClipboard('${u.whatsapp}')">📋 Copy</button>` : ''}
+                        </div>
                         ${isMainAdmin ? `
                             <button class="btn-secondary full-width margin-top" disabled style="opacity:0.5;">👑 Main Admin Protected</button>
                         ` : isBanned 
@@ -604,6 +723,14 @@ class MiniApp {
                     </div>
                 `;
             }
+        });
+    }
+
+    copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert(`Copied: ${text}`);
+        }).catch(() => {
+            alert("Failed to copy!");
         });
     }
 
