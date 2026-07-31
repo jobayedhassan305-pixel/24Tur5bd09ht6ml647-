@@ -29,7 +29,6 @@
             <button class="tab-btn" data-target="view-join-code">Join Code</button>
             <button class="tab-btn" data-target="view-profile">Profile</button>
             <button class="tab-btn" data-target="view-rules">Rules</button>
-            <button class="tab-btn" data-target="view-about">About</button>
             <button id="tab-creator" class="tab-btn hidden" data-target="view-creator">Host Panel</button>
             <button id="tab-admin" class="tab-btn hidden" data-target="view-admin">Admin Panel</button>
         </nav>
@@ -147,19 +146,8 @@
             <section id="view-rules" class="view-panel">
                 <div class="glass-card">
                     <h2>Official Rules</h2>
-                    <ul class="rules-list">
-                        <li><strong>এক্টিভ লিমিট:</strong> আপনি একই সময়ে একাধিক টুর্নামেন্টে থাকতে পারবেন না।</li>
-                        <li><strong>অটো ডিলিট:</strong> ম্যাচ পূর্ণ বা শুরু হওয়ার ১৭ মিনিট পর স্বয়ংক্রিয়ভাবে মুছে যাবে।</li>
-                    </ul>
-                </div>
-            </section>
-
-            <!-- VIEW 7: ABOUT PAGE -->
-            <section id="view-about" class="view-panel">
-                <div class="glass-card">
-                    <h2>About Us</h2>
-                    <div id="about-page-content" class="margin-top sub-text">
-                        Loading Information...
+                    <div id="rules-page-content" class="sub-text margin-top">
+                        Loading rules...
                     </div>
                 </div>
             </section>
@@ -210,14 +198,14 @@
                     </div>
                 </div>
 
-                <!-- Admin Edit About Us -->
+                <!-- Admin Edit Rules -->
                 <div class="glass-card margin-top">
-                    <h2>Edit About Us Page</h2>
+                    <h2>Edit Rules Page</h2>
                     <div class="input-group margin-top">
-                        <label>About Us Details Text</label>
-                        <textarea id="adm-about-text" style="height: 100px;"></textarea>
+                        <label>Rules Content</label>
+                        <textarea id="adm-rules-text" style="height: 120px;"></textarea>
                     </div>
-                    <button class="btn-action full-width" onclick="app.updateAboutContent()">Update About Page</button>
+                    <button class="btn-action full-width" onclick="app.updateRulesContent()">Update Rules Page</button>
                 </div>
 
                 <!-- Global Popup Manager -->
@@ -271,12 +259,13 @@
         </div>
     </div>
 
-    <!-- In-App Task / Embedded Webview Modal -->
+    <!-- Full-Screen Task Modal -->
     <div id="embedded-task-modal" class="modal-overlay hidden">
-        <div class="glass-card modal-content" style="width: 95%; max-width: 500px; height: 85vh; display: flex; flex-direction: column;">
-            <h3>Task Verification Link</h3>
-            <div style="flex: 1; margin: 10px 0; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
-                <iframe id="task-iframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+        <div class="glass-card modal-content" style="width: 98%; max-width: 600px; height: 92vh; display: flex; flex-direction: column; justify-content: space-between;">
+            <h3>Task Verification</h3>
+            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 15px; border: 1px dashed var(--accent-orange, #ff9900); border-radius: 8px; margin: 15px 0; background: rgba(0,0,0,0.3);">
+                <p class="sub-text" style="font-size: 15px; line-height: 1.5;">টাস্ক সম্পন্ন করতে নিচের বাটনে ক্লিক করে লিঙ্কটি ওপেন করুন এবং ফিরে এসে ১০ সেকেন্ড অপেক্ষা করুন।</p>
+                <button id="btn-open-task-link" class="btn-secondary margin-top" style="padding: 12px 20px; font-weight: bold;">🔗 Open Task Link</button>
             </div>
             <button id="btn-embedded-confirm" class="btn-action full-width" disabled onclick="app.completeTaskRegistration()">
                 Please wait (10s)...
