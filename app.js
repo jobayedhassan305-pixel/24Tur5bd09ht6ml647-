@@ -9,6 +9,7 @@ class MiniApp {
         this.activeTournament = null;
         this.taskRedirectTimer = null;
         this.pendingRegData = null;
+        this.userJoinedTournamentIds = new Set();
 
         this.initTelegram();
         this.bindEvents();
@@ -50,8 +51,8 @@ class MiniApp {
                 this.role = data.role;
                 this.isUnlocked = data.is_unlocked;
                 this.renderUIState();
+                await this.loadUserHistory();
                 this.loadTournaments();
-                this.loadRulesContent();
                 
                 if (data.announcements && data.announcements.length > 0) {
                     this.showAnnouncementsModal(data.announcements);
@@ -112,28 +113,32 @@ class MiniApp {
         if (profileName) profileName.innerText = this.user.first_name;
         if (profileIdTag) profileIdTag.innerText = `ID: ${this.user.telegram_id}`;
 
-        if (this.user.ff_uid) {
+        const cardUserVerify = document.getElementById("card-user-verify");
+        if (this.user.ff_uid && this.user.whatsapp) {
             const profFfUid = document.getElementById("prof-ff-uid");
-            const inputVerifyUid = document.getElementById("input-verify-uid");
-            if (profFfUid) profFfUid.innerText = `FF UID: ${this.user.ff_uid}`;
-            if (inputVerifyUid) inputVerifyUid.value = this.user.ff_uid;
-        }
-        if (this.user.whatsapp) {
             const profWa = document.getElementById("prof-wa");
-            const inputVerifyWa = document.getElementById("input-verify-wa");
+            if (profFfUid) profFfUid.innerText = `FF UID: ${this.user.ff_uid}`;
             if (profWa) profWa.innerText = `WhatsApp: ${this.user.whatsapp}`;
-            if (inputVerifyWa) inputVerifyWa.value = this.user.whatsapp;
+            if (cardUserVerify) cardUserVerify.classList.add("hidden"); // ভেরিফাই সফল হলে বাটন ও কার্ড হাইড
+        } else {
+            if (cardUserVerify) cardUserVerify.classList.remove("hidden");
         }
 
         const badge = document.getElementById("unlock-badge");
-        if (badge) {
-            if (this.isUnlocked) {
+        const btnAdUnlock = document.getElementById("btn-ad-unlock");
+
+        if (this.isUnlocked) {
+            if (badge) {
                 badge.className = "badge unlocked";
                 badge.innerText = "UNLOCKED 24H";
-            } else {
+            }
+            if (btnAdUnlock) btnAdUnlock.classList.add("hidden"); // আনলক থাকলে এড বাটন হাইড
+        } else {
+            if (badge) {
                 badge.className = "badge locked";
                 badge.innerText = "LOCKED";
             }
+            if (btnAdUnlock) btnAdUnlock.classList.remove("hidden");
         }
 
         const tabAdmin = document.getElementById("tab-admin");
@@ -156,7 +161,6 @@ class MiniApp {
         }
 
         this.loadMySquads();
-        this.loadUserHistory();
     }
 
     bindEvents() {
@@ -191,9 +195,6 @@ class MiniApp {
         if (viewId === "view-profile") {
             this.loadMySquads();
             this.loadUserHistory();
-        }
-        if (viewId === "view-rules") {
-            this.loadRulesContent();
         }
     }
 
@@ -239,8 +240,14 @@ class MiniApp {
             }
 
             data.tournaments.forEach(t => {
+                const isAlreadyJoined = this.userJoinedTournamentIds.has(t.id);
                 const card = document.createElement("div");
                 card.className = "glass-card tournament-item";
+                
+                let actionBtnHtml = isAlreadyJoined 
+                    ? `<button class="btn-action full-width margin-top" disabled style="opacity: 0.6; cursor: not-allowed; background: #2e7d32;">✅ Joined</button>`
+                    : `<button class="btn-action full-width margin-top" onclick="app.openTournamentDetail('${t.id}')">Join / View Details</button>`;
+
                 card.innerHTML = `
                     <div class="tournament-header">
                         <span>${t.code} (${t.total_joined_players}/${t.max_players})</span>
@@ -250,7 +257,7 @@ class MiniApp {
                     <div class="tournament-meta">
                         <span>🏆 ${t.prize}</span> | <span>🕒 ${t.start_time}</span>
                     </div>
-                    <button class="btn-action full-width margin-top" onclick="app.openTournamentDetail('${t.id}')">Join / View Details</button>
+                    ${actionBtnHtml}
                 `;
                 container.appendChild(card);
 
@@ -338,6 +345,7 @@ class MiniApp {
         });
         const data = await res.json();
         if (res.ok) {
+            if (payload.tournament_id) this.userJoinedTournamentIds.add(payload.tournament_id);
             this.openEmbeddedTask(data.task_link, `🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}`);
         } else {
             alert(`⚠️ ${data.detail}`);
@@ -410,7 +418,7 @@ class MiniApp {
         }, 1000);
     }
 
-    completeTaskRegistration() {
+    async completeTaskRegistration() {
         const modal = document.getElementById("embedded-task-modal");
         if (modal) modal.classList.add("hidden");
 
@@ -418,6 +426,7 @@ class MiniApp {
             alert(this.pendingRegData.successMsg);
             this.pendingRegData = null;
         }
+        await this.loadUserHistory();
         this.loadTournaments();
         this.navigate("view-home");
     }
@@ -441,7 +450,10 @@ class MiniApp {
                 container.innerHTML += `
                     <div class="player-box margin-top">
                         <div><strong>${sq.squad_name}</strong></div>
-                        <div class="sub-text" style="color:var(--accent-orange);">Private Code: <code>${sq.squad_code}</code></div>
+                        <div class="sub-text" style="color:var(--accent-orange); display: flex; align-items: center; gap: 8px;">
+                            Private Code: <code>${sq.squad_code}</code>
+                            <button class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="app.copyToClipboard('${sq.squad_code}')">📋 Copy</button>
+                        </div>
                         <ul class="sub-text">${mList}</ul>
                         <button class="btn-secondary full-width margin-top" onclick="app.deleteMySquad('${sq.squad_code}')">❌ Delete Squad</button>
                     </div>
@@ -460,24 +472,31 @@ class MiniApp {
                 headers: { "X-TG-ID": this.user.telegram_id.toString() }
             });
             const data = await res.json();
-            container.innerHTML = "";
+            if (container) container.innerHTML = "";
+
+            this.userJoinedTournamentIds.clear();
 
             if (!data.history || data.history.length === 0) {
-                container.innerHTML = `<p class="sub-text">আপনি এখনো কোনো টুর্নামেন্টে অংশ নেননি।</p>`;
+                if (container) container.innerHTML = `<p class="sub-text">আপনি এখনো কোনো টুর্নামেন্টে অংশ নেননি।</p>`;
                 return;
             }
 
             data.history.forEach(item => {
-                container.innerHTML += `
-                    <div class="player-box margin-top">
-                        <div><strong>${item.tournament_title}</strong></div>
-                        <div class="sub-text">Squad: ${item.squad_name}</div>
-                        <div class="sub-text">Joined At: ${item.joined_at}</div>
-                    </div>
-                `;
+                if (item.tournament_id) {
+                    this.userJoinedTournamentIds.add(item.tournament_id);
+                }
+                if (container) {
+                    container.innerHTML += `
+                        <div class="player-box margin-top">
+                            <div><strong>${item.tournament_title}</strong></div>
+                            <div class="sub-text">Squad: ${item.squad_name}</div>
+                            <div class="sub-text">Joined At: ${item.joined_at}</div>
+                        </div>
+                    `;
+                }
             });
         } catch (err) {
-            container.innerHTML = `<p class="sub-text">History unavailable.</p>`;
+            if (container) container.innerHTML = `<p class="sub-text">History unavailable.</p>`;
         }
     }
 
@@ -492,6 +511,7 @@ class MiniApp {
         if (res.ok) {
             alert("স্কোয়াড ডিলিট সফল হয়েছে!");
             this.loadMySquads();
+            await this.loadUserHistory();
             this.loadTournaments();
         }
     }
@@ -612,35 +632,6 @@ class MiniApp {
             if (tk) { if (host.tiktok) { tk.href = host.tiktok; tk.classList.remove("hidden"); } else { tk.classList.add("hidden"); } }
 
             this.navigate("view-host-profile");
-        }
-    }
-
-    // Rules Content Load & Update
-    async loadRulesContent() {
-        const rulesBox = document.getElementById("rules-page-content");
-        const admRulesBox = document.getElementById("adm-rules-text");
-        try {
-            const res = await fetch(`${CONFIG.API_BASE}/about`);
-            const data = await res.json();
-            if (rulesBox) rulesBox.innerText = data.content || "১. এক্টিভ লিমিট: একই সময়ে একাধিক টুর্নামেন্টে থাকা যাবে না।\n২. অটো ডিলিট: ১৭ মিনিট পর স্বয়ংক্রিয়ভাবে মুছে যাবে।";
-            if (admRulesBox && !admRulesBox.value) admRulesBox.value = data.content || "";
-        } catch (err) {
-            if (rulesBox) rulesBox.innerText = "১. এক্টিভ লিমিট: একই সময়ে একাধিক টুর্নামেন্টে থাকা যাবে না।\n২. অটো ডিলিট: ১৭ মিনিট পর স্বয়ংক্রিয়ভাবে মুছে যাবে।";
-        }
-    }
-
-    async updateRulesContent() {
-        const text = document.getElementById("adm-rules-text")?.value.trim();
-        if (!text) return alert("লেখা ফাঁকা রাখা যাবে না!");
-
-        const res = await fetch(`${CONFIG.API_BASE}/admin/about`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
-            body: JSON.stringify({ content: text })
-        });
-        if (res.ok) {
-            alert("✅ Rules Page Updated!");
-            this.loadRulesContent();
         }
     }
 
