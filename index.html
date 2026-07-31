@@ -28,6 +28,7 @@
             <button class="tab-btn" data-target="view-join-code">Join Code</button>
             <button class="tab-btn" data-target="view-profile">Profile</button>
             <button class="tab-btn" data-target="view-rules">Rules</button>
+            <button class="tab-btn" data-target="view-about">About</button>
             <button id="tab-creator" class="tab-btn hidden" data-target="view-creator">Host Panel</button>
             <button id="tab-admin" class="tab-btn hidden" data-target="view-admin">Admin Panel</button>
         </nav>
@@ -129,8 +130,14 @@
                     </form>
                 </div>
 
+                <!-- Match Joining History -->
                 <div class="glass-card margin-top">
-                    <h3>My Registered Squads</h3>
+                    <h3>Joined Tournaments History</h3>
+                    <div id="joined-history-list" class="card-grid margin-top"></div>
+                </div>
+
+                <div class="glass-card margin-top">
+                    <h3>My Squads (Leader Access Only)</h3>
                     <div id="my-squads-list" class="card-grid margin-top"></div>
                 </div>
             </section>
@@ -146,7 +153,17 @@
                 </div>
             </section>
 
-            <!-- VIEW 7: CREATOR / HOST PANEL -->
+            <!-- VIEW 7: ABOUT PAGE -->
+            <section id="view-about" class="view-panel">
+                <div class="glass-card">
+                    <h2>About Us</h2>
+                    <div id="about-page-content" class="margin-top sub-text">
+                        Loading Information...
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 8: CREATOR / HOST PANEL -->
             <section id="view-creator" class="view-panel">
                 <div class="glass-card">
                     <h2>Host Profile Settings</h2>
@@ -181,7 +198,7 @@
                 </div>
             </section>
 
-            <!-- VIEW 8: MAIN ADMIN PANEL -->
+            <!-- VIEW 9: MAIN ADMIN PANEL -->
             <section id="view-admin" class="view-panel">
                 <div class="glass-card">
                     <h2>Platform Control Center</h2>
@@ -190,6 +207,16 @@
                         <div class="stat-card"><div class="stat-val" id="adm-total-tournaments">0</div><div class="stat-lbl">Matches</div></div>
                         <div class="stat-card"><div class="stat-val" id="adm-total-ads">0</div><div class="stat-lbl">Ad Views</div></div>
                     </div>
+                </div>
+
+                <!-- Admin Edit About Us -->
+                <div class="glass-card margin-top">
+                    <h2>Edit About Us Page</h2>
+                    <div class="input-group margin-top">
+                        <label>About Us Details Text</label>
+                        <textarea id="adm-about-text" style="height: 100px;"></textarea>
+                    </div>
+                    <button class="btn-action full-width" onclick="app.updateAboutContent()">Update About Page</button>
                 </div>
 
                 <!-- Global Popup Manager -->
@@ -243,44 +270,19 @@
         </div>
     </div>
 
-    <!-- Redirect Countdown Overlay -->
-    <div id="redirect-countdown-overlay" class="modal-overlay hidden">
-        <div class="glass-card modal-content align-center">
-            <div class="spinner"></div>
-            <h3 class="margin-top">Redirecting & Processing</h3>
-            <p id="redirect-timer-text" class="sub-text margin-top">Please wait...</p>
+    <!-- In-App Task / Embedded Webview Modal -->
+    <div id="embedded-task-modal" class="modal-overlay hidden">
+        <div class="glass-card modal-content" style="width: 95%; max-width: 500px; height: 85vh; display: flex; flex-direction: column;">
+            <h3>Task Verification Link</h3>
+            <div style="flex: 1; margin: 10px 0; border: 1px solid #333; border-radius: 8px; overflow: hidden;">
+                <iframe id="task-iframe" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+            <button id="btn-embedded-confirm" class="btn-action full-width" disabled onclick="app.completeTaskRegistration()">
+                Please wait (10s)...
+            </button>
         </div>
     </div>
 
     <script src="app.js"></script>
 </body>
 </html>
-                  <div id="adm-users-list" class="card-grid margin-top"></div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Announcement Pop-up Modal -->
-    <div id="popup-announcement-modal" class="modal-overlay hidden">
-        <div class="glass-card modal-content">
-            <h3>📢 Notice</h3>
-            <div id="popup-announcements-body"></div>
-            <button class="btn-action full-width margin-top" onclick="app.closeAnnouncements()">Close</button>
-        </div>
-    </div>
-
-    <!-- Redirect Countdown Overlay -->
-    <div id="redirect-countdown-overlay" class="modal-overlay hidden">
-        <div class="glass-card modal-content align-center">
-            <div class="spinner"></div>
-            <h3 class="margin-top">Redirecting & Processing</h3>
-            <p id="redirect-timer-text" class="sub-text margin-top">Please wait...</p>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
-</html>
-
-'''
