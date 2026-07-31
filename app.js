@@ -51,7 +51,7 @@ class MiniApp {
                 this.isUnlocked = data.is_unlocked;
                 this.renderUIState();
                 this.loadTournaments();
-                this.loadAboutContent();
+                this.loadRulesContent();
                 
                 if (data.announcements && data.announcements.length > 0) {
                     this.showAnnouncementsModal(data.announcements);
@@ -192,8 +192,8 @@ class MiniApp {
             this.loadMySquads();
             this.loadUserHistory();
         }
-        if (viewId === "view-about") {
-            this.loadAboutContent();
+        if (viewId === "view-rules") {
+            this.loadRulesContent();
         }
     }
 
@@ -372,17 +372,26 @@ class MiniApp {
         }
     }
 
-    // Opens WebView Inside Mini App with 10-second timer
+    // Task Open with Telegram / Web Browser Fix
     openEmbeddedTask(linkUrl, successMsg) {
         this.pendingRegData = { successMsg };
         const modal = document.getElementById("embedded-task-modal");
-        const iframe = document.getElementById("task-iframe");
-        const btn = document.getElementById("btn-embedded-confirm");
+        const btnOpen = document.getElementById("btn-open-task-link");
+        const btnConfirm = document.getElementById("btn-embedded-confirm");
 
-        if (iframe) iframe.src = linkUrl;
-        if (btn) {
-            btn.disabled = true;
-            btn.innerText = "Please wait (10s)...";
+        if (btnOpen) {
+            btnOpen.onclick = () => {
+                if (this.tg && this.tg.openLink) {
+                    this.tg.openLink(linkUrl);
+                } else {
+                    window.open(linkUrl, "_blank");
+                }
+            };
+        }
+
+        if (btnConfirm) {
+            btnConfirm.disabled = true;
+            btnConfirm.innerText = "Please wait (10s)...";
         }
         if (modal) modal.classList.remove("hidden");
 
@@ -390,12 +399,12 @@ class MiniApp {
         clearInterval(this.taskRedirectTimer);
         this.taskRedirectTimer = setInterval(() => {
             sec--;
-            if (btn) btn.innerText = `Please wait (${sec}s)...`;
+            if (btnConfirm) btnConfirm.innerText = `Please wait (${sec}s)...`;
             if (sec <= 0) {
                 clearInterval(this.taskRedirectTimer);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerText = "Registration Now (Confirm)";
+                if (btnConfirm) {
+                    btnConfirm.disabled = false;
+                    btnConfirm.innerText = "Confirm Registration";
                 }
             }
         }, 1000);
@@ -404,8 +413,6 @@ class MiniApp {
     completeTaskRegistration() {
         const modal = document.getElementById("embedded-task-modal");
         if (modal) modal.classList.add("hidden");
-        const iframe = document.getElementById("task-iframe");
-        if (iframe) iframe.src = "";
 
         if (this.pendingRegData) {
             alert(this.pendingRegData.successMsg);
@@ -434,7 +441,6 @@ class MiniApp {
                 container.innerHTML += `
                     <div class="player-box margin-top">
                         <div><strong>${sq.squad_name}</strong></div>
-                        <!-- Leader Security: Code only visible to squad leader -->
                         <div class="sub-text" style="color:var(--accent-orange);">Private Code: <code>${sq.squad_code}</code></div>
                         <ul class="sub-text">${mList}</ul>
                         <button class="btn-secondary full-width margin-top" onclick="app.deleteMySquad('${sq.squad_code}')">❌ Delete Squad</button>
@@ -490,11 +496,13 @@ class MiniApp {
         }
     }
 
+    // Monetag Rewarded Popup Ad Integration
     async showAdAndUnlock() {
-        if (typeof show_10253210 === 'function') {
-            show_10253210().then(async () => {
+        if (typeof show_11466993 === 'function') {
+            show_11466993('pop').then(async () => {
                 await this.verifyAdReward();
-            }).catch(() => {
+            }).catch((e) => {
+                console.error("Ad error:", e);
                 alert("Ad failed to load. Please try again.");
             });
         } else {
@@ -607,22 +615,22 @@ class MiniApp {
         }
     }
 
-    // About Us Content Load & Update
-    async loadAboutContent() {
-        const aboutBox = document.getElementById("about-page-content");
-        const admAboutBox = document.getElementById("adm-about-text");
+    // Rules Content Load & Update
+    async loadRulesContent() {
+        const rulesBox = document.getElementById("rules-page-content");
+        const admRulesBox = document.getElementById("adm-rules-text");
         try {
             const res = await fetch(`${CONFIG.API_BASE}/about`);
             const data = await res.json();
-            if (aboutBox) aboutBox.innerText = data.content || "Welcome to Free Fire Esports Platform!";
-            if (admAboutBox && !admAboutBox.value) admAboutBox.value = data.content || "";
+            if (rulesBox) rulesBox.innerText = data.content || "১. এক্টিভ লিমিট: একই সময়ে একাধিক টুর্নামেন্টে থাকা যাবে না।\n২. অটো ডিলিট: ১৭ মিনিট পর স্বয়ংক্রিয়ভাবে মুছে যাবে।";
+            if (admRulesBox && !admRulesBox.value) admRulesBox.value = data.content || "";
         } catch (err) {
-            if (aboutBox) aboutBox.innerText = "Welcome to Free Fire Esports Engine!";
+            if (rulesBox) rulesBox.innerText = "১. এক্টিভ লিমিট: একই সময়ে একাধিক টুর্নামেন্টে থাকা যাবে না।\n২. অটো ডিলিট: ১৭ মিনিট পর স্বয়ংক্রিয়ভাবে মুছে যাবে।";
         }
     }
 
-    async updateAboutContent() {
-        const text = document.getElementById("adm-about-text")?.value.trim();
+    async updateRulesContent() {
+        const text = document.getElementById("adm-rules-text")?.value.trim();
         if (!text) return alert("লেখা ফাঁকা রাখা যাবে না!");
 
         const res = await fetch(`${CONFIG.API_BASE}/admin/about`, {
@@ -631,8 +639,8 @@ class MiniApp {
             body: JSON.stringify({ content: text })
         });
         if (res.ok) {
-            alert("✅ About Us Page Updated!");
-            this.loadAboutContent();
+            alert("✅ Rules Page Updated!");
+            this.loadRulesContent();
         }
     }
 
