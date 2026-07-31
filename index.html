@@ -44,7 +44,7 @@
             <section id="view-join-code" class="view-panel">
                 <div class="glass-card">
                     <h2>Join Squad via Code</h2>
-                    <p class="sub-text">স্কোয়াড কোডটি নিচে দিয়ে মেম্বার হিসেবে যুক্ত হোন।</p>
+                    <p class="sub-text">স্কোঁয়াড কোডটি নিচে দিয়ে মেম্বার হিসেবে যুক্ত হোন।</p>
                     <div class="input-group margin-top">
                         <label>Squad Code</label>
                         <input type="text" id="join-sq-code" placeholder="e.g. SQ-A1B2C3">
@@ -252,15 +252,20 @@
         </div>
     </div>
 
-    <!-- Full-Screen Task Modal -->
+    <!-- Full-Screen Task Modal with In-App Embedded Web View -->
     <div id="embedded-task-modal" class="modal-overlay hidden">
-        <div class="glass-card modal-content" style="width: 98%; max-width: 600px; height: 92vh; display: flex; flex-direction: column; justify-content: space-between;">
-            <h3>Task Verification</h3>
-            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 15px; border: 1px dashed var(--accent-orange, #ff9900); border-radius: 8px; margin: 15px 0; background: rgba(0,0,0,0.3);">
-                <p class="sub-text" style="font-size: 15px; line-height: 1.5;">টাস্ক সম্পন্ন করতে নিচের বাটনে ক্লিক করে লিঙ্কটি ওপেন করুন এবং ফিরে এসে ১০ সেকেন্ড অপেক্ষা করুন।</p>
-                <button id="btn-open-task-link" class="btn-secondary margin-top" style="padding: 12px 20px; font-weight: bold;">🔗 Open Task Link</button>
+        <div class="glass-card modal-content" style="width: 98%; max-width: 600px; height: 92vh; display: flex; flex-direction: column; justify-content: space-between; padding: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="margin: 0;">Task Verification</h3>
+                <span class="sub-text" style="font-size: 12px; color: var(--accent-orange, #ff9900);">Complete task inside app</span>
             </div>
-            <button id="btn-embedded-confirm" class="btn-action full-width" disabled onclick="app.completeTaskRegistration()">
+
+            <!-- Task Frame Container -->
+            <div style="flex: 1; width: 100%; border: 1px solid var(--accent-orange, #ff9900); border-radius: 8px; overflow: hidden; position: relative; background: #000;">
+                <iframe id="task-iframe" src="" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
+            </div>
+
+            <button id="btn-embedded-confirm" class="btn-action full-width margin-top" disabled onclick="app.completeTaskRegistration()">
                 Please wait (10s)...
             </button>
         </div>
