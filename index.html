@@ -115,7 +115,7 @@
                     <div id="prof-wa" class="sub-text style-badge">WhatsApp: Not Verified</div>
                 </div>
 
-                <div class="glass-card margin-top">
+                <div id="card-user-verify" class="glass-card margin-top">
                     <h3>Account Verification</h3>
                     <form id="form-user-verify" class="margin-top">
                         <div class="input-group">
@@ -126,7 +126,7 @@
                             <label>WhatsApp Number</label>
                             <input type="text" id="input-verify-wa" placeholder="017xxxxxxxx" required>
                         </div>
-                        <button type="submit" class="btn-action full-width">Save & Verify Profile</button>
+                        <button id="btn-save-verify" type="submit" class="btn-action full-width">Save & Verify Profile</button>
                     </form>
                 </div>
 
@@ -146,9 +146,12 @@
             <section id="view-rules" class="view-panel">
                 <div class="glass-card">
                     <h2>Official Rules</h2>
-                    <div id="rules-page-content" class="sub-text margin-top">
-                        Loading rules...
-                    </div>
+                    <ul class="rules-list margin-top" style="line-height: 1.8; list-style-type: decimal; padding-left: 20px;">
+                        <li>প্লেয়ারের আইডি লেভেল 40 হতে হবে না হলে রুমে জয়েন করতে পারবে না।</li>
+                        <li>অবশ্যই বাংলাদেশের সার্ভারের প্লেয়ার হতে হবে।</li>
+                        <li>কোনো থার্ড পার্টি অ্যাপস, হ্যাক বা কোনো প্যানেল ইউজারদের আইডি পার্মানেন্ট ব্যান করে দেওয়া হবে।</li>
+                        <li>Banned না হওয়া ফ্রি ফায়ার UID অথবা হোয়াটসঅ্যাপ নম্বর দিয়ে অ্যাকাউন্ট ভেরিফাই করতে হবে।</li>
+                    </ul>
                 </div>
             </section>
 
@@ -196,16 +199,6 @@
                         <div class="stat-card"><div class="stat-val" id="adm-total-tournaments">0</div><div class="stat-lbl">Matches</div></div>
                         <div class="stat-card"><div class="stat-val" id="adm-total-ads">0</div><div class="stat-lbl">Ad Views</div></div>
                     </div>
-                </div>
-
-                <!-- Admin Edit Rules -->
-                <div class="glass-card margin-top">
-                    <h2>Edit Rules Page</h2>
-                    <div class="input-group margin-top">
-                        <label>Rules Content</label>
-                        <textarea id="adm-rules-text" style="height: 120px;"></textarea>
-                    </div>
-                    <button class="btn-action full-width" onclick="app.updateRulesContent()">Update Rules Page</button>
                 </div>
 
                 <!-- Global Popup Manager -->
