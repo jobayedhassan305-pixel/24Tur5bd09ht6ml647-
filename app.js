@@ -380,21 +380,16 @@ class MiniApp {
         }
     }
 
-    // Task Open with Telegram / Web Browser Fix
+    // Embedded Task inside Mini App via Iframe
     openEmbeddedTask(linkUrl, successMsg) {
         this.pendingRegData = { successMsg };
         const modal = document.getElementById("embedded-task-modal");
-        const btnOpen = document.getElementById("btn-open-task-link");
+        const iframe = document.getElementById("task-iframe");
         const btnConfirm = document.getElementById("btn-embedded-confirm");
 
-        if (btnOpen) {
-            btnOpen.onclick = () => {
-                if (this.tg && this.tg.openLink) {
-                    this.tg.openLink(linkUrl);
-                } else {
-                    window.open(linkUrl, "_blank");
-                }
-            };
+        // iframe-এ লিঙ্কটি লোড করা
+        if (iframe) {
+            iframe.src = linkUrl;
         }
 
         if (btnConfirm) {
@@ -420,7 +415,10 @@ class MiniApp {
 
     async completeTaskRegistration() {
         const modal = document.getElementById("embedded-task-modal");
+        const iframe = document.getElementById("task-iframe");
+
         if (modal) modal.classList.add("hidden");
+        if (iframe) iframe.src = ""; // iframe খালি করা
 
         if (this.pendingRegData) {
             alert(this.pendingRegData.successMsg);
