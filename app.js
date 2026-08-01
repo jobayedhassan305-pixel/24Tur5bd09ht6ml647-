@@ -1,4 +1,8 @@
-const CONFIG = { API_BASE: "https://onemy4-turbd.onrender.com/api" };
+javascript
+const CONFIG = { 
+    API_BASE: "https://onemy4-turbd.onrender.com/api",
+    GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api" // আপনার ভেরিফিকেশন সার্ভার ইউআরএল
+};
 
 class MiniApp {
     constructor() {
@@ -155,6 +159,7 @@ class MiniApp {
         if (tabCreator) {
             if (this.role === "CREATOR" || this.role === "MAIN_ADMIN") {
                 tabCreator.classList.remove("hidden");
+                this.generateSubAdminScriptCode();
             } else {
                 tabCreator.classList.add("hidden");
             }
@@ -186,6 +191,22 @@ class MiniApp {
             e.preventDefault();
             this.handleUserVerification();
         });
+    }
+
+    generateSubAdminScriptCode() {
+        const codeBox = document.getElementById("sub-admin-script-box");
+        if (codeBox) {
+            codeBox.value = `<!-- Esports Secure Verification Button -->\n<div id="esports-verify-widget"></div>\n<script src="${CONFIG.GATEWAY_BASE}/sdk.js" async></script>`;
+        }
+    }
+
+    copyScriptCode() {
+        const codeBox = document.getElementById("sub-admin-script-box");
+        if (codeBox && codeBox.value) {
+            navigator.clipboard.writeText(codeBox.value).then(() => {
+                alert("📋 সাব-এডমিন ওয়েবসাইট কোড কপি হয়েছে! আপনার ওয়েবসাইটের HTML ফাইলের ভেতর বসান।");
+            });
+        }
     }
 
     navigate(viewId) {
@@ -346,7 +367,16 @@ class MiniApp {
         const data = await res.json();
         if (res.ok) {
             if (payload.tournament_id) this.userJoinedTournamentIds.add(payload.tournament_id);
-            this.openEmbeddedTask(data.task_link, `🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}`);
+            const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
+            alert(`🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}\n\n১৫ সেকেন্ড অবস্থানের জন্য সাব-এডমিনের সাইটে পাঠানো হচ্ছে...`);
+            
+            // সরাসরি ক্রোম / এক্সটার্নাল ব্রাউজার ওপেন
+            if (this.tg && this.tg.openLink) {
+                this.tg.openLink(redirectUrl);
+            } else {
+                window.open(redirectUrl, "_blank");
+            }
+            this.navigate("view-home");
         } else {
             alert(`⚠️ ${data.detail}`);
         }
@@ -374,59 +404,19 @@ class MiniApp {
         });
         const data = await res.json();
         if (res.ok) {
-            this.openEmbeddedTask(data.task_link, "✅ স্কোয়াডে জয়েন সম্পূর্ণ হয়েছে!");
+            const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
+            alert("✅ স্কোয়াডে জয়েন সফল হয়েছে!\n\n১৫ সেকেন্ড অবস্থানের জন্য সাব-এডমিনের সাইটে পাঠানো হচ্ছে...");
+            
+            // সরাসরি ক্রোম / এক্সটার্নাল ব্রাউজার ওপেন
+            if (this.tg && this.tg.openLink) {
+                this.tg.openLink(redirectUrl);
+            } else {
+                window.open(redirectUrl, "_blank");
+            }
+            this.navigate("view-home");
         } else {
             alert(`⚠️ ${data.detail}`);
         }
-    }
-
-    // Embedded Task inside Mini App via Iframe
-    openEmbeddedTask(linkUrl, successMsg) {
-        this.pendingRegData = { successMsg };
-        const modal = document.getElementById("embedded-task-modal");
-        const iframe = document.getElementById("task-iframe");
-        const btnConfirm = document.getElementById("btn-embedded-confirm");
-
-        // iframe-এ লিঙ্কটি লোড করা
-        if (iframe) {
-            iframe.src = linkUrl;
-        }
-
-        if (btnConfirm) {
-            btnConfirm.disabled = true;
-            btnConfirm.innerText = "Please wait (10s)...";
-        }
-        if (modal) modal.classList.remove("hidden");
-
-        let sec = 10;
-        clearInterval(this.taskRedirectTimer);
-        this.taskRedirectTimer = setInterval(() => {
-            sec--;
-            if (btnConfirm) btnConfirm.innerText = `Please wait (${sec}s)...`;
-            if (sec <= 0) {
-                clearInterval(this.taskRedirectTimer);
-                if (btnConfirm) {
-                    btnConfirm.disabled = false;
-                    btnConfirm.innerText = "Confirm Registration";
-                }
-            }
-        }, 1000);
-    }
-
-    async completeTaskRegistration() {
-        const modal = document.getElementById("embedded-task-modal");
-        const iframe = document.getElementById("task-iframe");
-
-        if (modal) modal.classList.add("hidden");
-        if (iframe) iframe.src = ""; // iframe খালি করা
-
-        if (this.pendingRegData) {
-            alert(this.pendingRegData.successMsg);
-            this.pendingRegData = null;
-        }
-        await this.loadUserHistory();
-        this.loadTournaments();
-        this.navigate("view-home");
     }
 
     async loadMySquads() {
@@ -807,3 +797,5 @@ class MiniApp {
 window.addEventListener("DOMContentLoaded", () => {
     window.app = new MiniApp();
 });
+
+
