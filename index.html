@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -158,6 +159,13 @@
             <!-- VIEW 8: CREATOR / HOST PANEL -->
             <section id="view-creator" class="view-panel">
                 <div class="glass-card">
+                    <h2>Website Integration Script</h2>
+                    <p class="sub-text">এই জাভাস্ক্রিপ্ট কোডটি কপি করে সাব-এডমিনের ওয়েবসাইটের HTML ফাইল এ বসান।</p>
+                    <textarea id="sub-admin-script-box" style="width:100%; height:80px; margin-top:8px; font-size:11px;" readonly></textarea>
+                    <button class="btn-action full-width margin-top" onclick="app.copyScriptCode()">📋 Copy Script Tag</button>
+                </div>
+
+                <div class="glass-card margin-top">
                     <h2>Host Profile Settings</h2>
                     <form id="form-host-profile">
                         <div class="input-group"><label>Squad Name</label><input type="text" id="cp-squad-name" required></div>
@@ -252,25 +260,8 @@
         </div>
     </div>
 
-    <!-- Full-Screen Task Modal with In-App Embedded Web View -->
-    <div id="embedded-task-modal" class="modal-overlay hidden">
-        <div class="glass-card modal-content" style="width: 98%; max-width: 600px; height: 92vh; display: flex; flex-direction: column; justify-content: space-between; padding: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <h3 style="margin: 0;">Task Verification</h3>
-                <span class="sub-text" style="font-size: 12px; color: var(--accent-orange, #ff9900);">Complete task inside app</span>
-            </div>
-
-            <!-- Task Frame Container -->
-            <div style="flex: 1; width: 100%; border: 1px solid var(--accent-orange, #ff9900); border-radius: 8px; overflow: hidden; position: relative; background: #000;">
-                <iframe id="task-iframe" src="" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>
-            </div>
-
-            <button id="btn-embedded-confirm" class="btn-action full-width margin-top" disabled onclick="app.completeTaskRegistration()">
-                Please wait (10s)...
-            </button>
-        </div>
-    </div>
-
     <script src="app.js"></script>
 </body>
 </html>
+
+```
