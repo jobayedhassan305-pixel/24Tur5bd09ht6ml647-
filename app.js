@@ -1,4 +1,4 @@
-javascript
+
 const CONFIG = { 
     API_BASE: "https://onemy4-turbd.onrender.com/api",
     GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api" // আপনার ভেরিফিকেশন সার্ভার ইউআরএল
