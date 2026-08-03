@@ -37,6 +37,9 @@
         <main id="main-content">
             <!-- VIEW 1: HOME / TOURNAMENTS -->
             <section id="view-home" class="view-panel active">
+                <div class="search-box glass-card">
+                    <input type="text" id="input-search-tournaments" placeholder="🔍 টুর্নামেন্ট টাইম বা ম্যাচ কোড দিয়ে খুঁজুন..." oninput="app.searchTournaments()">
+                </div>
                 <div class="section-title">Active Tournaments</div>
                 <div id="tournament-list" class="card-grid margin-top"></div>
             </section>
@@ -131,14 +134,8 @@
                     </form>
                 </div>
 
-                <!-- Match Joining History -->
                 <div class="glass-card margin-top">
-                    <h3>Joined Tournaments History</h3>
-                    <div id="joined-history-list" class="card-grid margin-top"></div>
-                </div>
-
-                <div class="glass-card margin-top">
-                    <h3>My Squads (Leader Access Only)</h3>
+                    <h3>My Joined Squads & Room Credentials</h3>
                     <div id="my-squads-list" class="card-grid margin-top"></div>
                 </div>
             </section>
@@ -187,14 +184,14 @@
                         <div class="input-group"><label>Task Description</label><input type="text" id="cr-task-desc" required></div>
                         <div class="input-group"><label>Task Link</label><input type="url" id="cr-task-link" required></div>
                         <div class="input-group"><label>Rules</label><textarea id="cr-rules" required></textarea></div>
-                        <div class="input-group"><label>Start Time</label><input type="text" id="cr-time" placeholder="Today 9:00 PM" required></div>
+                        <div class="input-group"><label>Start Time (Text)</label><input type="text" id="cr-time" placeholder="Today 9:00 PM" required></div>
                         <button type="submit" class="btn-action full-width margin-top">Publish Tournament</button>
                     </form>
                 </div>
 
                 <div class="glass-card margin-top">
-                    <h3>Your Active Tournament Actions</h3>
-                    <div id="creator-active-controls"></div>
+                    <h3>Upload Room ID & Password</h3>
+                    <div id="creator-room-management"></div>
                 </div>
             </section>
 
@@ -207,6 +204,14 @@
                         <div class="stat-card"><div class="stat-val" id="adm-total-tournaments">0</div><div class="stat-lbl">Matches</div></div>
                         <div class="stat-card"><div class="stat-val" id="adm-total-ads">0</div><div class="stat-lbl">Ad Views</div></div>
                     </div>
+                </div>
+
+                <!-- Database File Upload & Merge -->
+                <div class="glass-card margin-top">
+                    <h2>Import / Merge JSON Database</h2>
+                    <p class="sub-text">কোনো কারণে ব্যাকআপ ফাইল ইমপোর্ট করার প্রয়োজন হলে নিচের ফাইল নির্বাচন ক্লিক করে আপলোড করুন।</p>
+                    <input type="file" id="adm-json-file" accept=".json" class="margin-top">
+                    <button class="btn-action full-width margin-top" onclick="app.uploadDatabaseJson()">📤 Upload & Merge Data</button>
                 </div>
 
                 <!-- Global Popup Manager -->
