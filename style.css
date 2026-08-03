@@ -1,11 +1,12 @@
+
 :root {
     --bg-primary: #0f141c;
     --bg-secondary: #1a212d;
     --accent-orange: #ff4500;
     --accent-gold: #ffb700;
-    --text-main: #ffffff; /* টেক্সট সম্পূর্ণ পরিষ্কার দেখার জন্য pure white করা হয়েছে */
-    --text-muted: #a0aec0; /* ঝাপসা কাটাতে হালকা কালার বৃদ্ধি */
-    --glass-surface: rgba(26, 33, 45, 0.95); /* ট্রান্সপারেন্সি কমিয়ে স্পষ্ট করা হয়েছে */
+    --text-main: #ffffff;
+    --text-muted: #a0aec0;
+    --glass-surface: rgba(26, 33, 45, 0.95);
     --glass-border: rgba(255, 255, 255, 0.15);
     --radius-lg: 16px;
     --radius-md: 10px;
@@ -32,7 +33,7 @@ body {
 #app-container {
     width: 100%;
     max-width: 480px;
-    background: #0f141c; /* অতি-অন্ধকার রেডিয়াল গ্রেডিয়েন্ট সরিয়ে সলিড পরিষ্কার ব্যাকগ্রাউন্ড দেওয়া হয়েছে */
+    background: #0f141c;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
@@ -44,7 +45,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 16px;
-    background: var(--bg-secondary); /* ঝাপসা ভাব দূর করতে সলিড ব্যাকগ্রাউন্ড */
+    background: var(--bg-secondary);
     border-bottom: 1px solid var(--glass-border);
     position: sticky;
     top: 0;
@@ -158,7 +159,7 @@ body {
     border-radius: var(--radius-lg);
     padding: 16px;
     margin-bottom: 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* কার্ড স্পষ্ট করার জন্য শেডো যোগ করা হয়েছে */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .card-grid {
@@ -208,13 +209,14 @@ body {
 }
 
 input, select, textarea {
-    background: #090c10; /* ইনপুট ফিল্ড সহজে দেখার জন্য ডার্ক ব্যাকগ্রাউন্ড */
+    background: #090c10;
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: var(--radius-md);
     padding: 10px 12px;
     color: var(--text-main);
     font-size: 0.9rem;
     outline: none;
+    width: 100%;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -369,21 +371,6 @@ input:focus, select:focus, textarea:focus {
     color: #fff;
 }
 
-.spinner {
-    border: 4px solid rgba(255, 255, 255, 0.1);
-    border-top: 4px solid var(--accent-orange);
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
 .style-badge {
     background: rgba(255, 255, 255, 0.1);
     padding: 4px 8px;
@@ -391,3 +378,12 @@ input:focus, select:focus, textarea:focus {
     display: inline-block;
     margin: 2px 0;
 }
+
+code {
+    background: #000;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--accent-gold);
+}
+
+
