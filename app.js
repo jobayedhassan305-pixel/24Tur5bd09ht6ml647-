@@ -1,7 +1,7 @@
 
 const CONFIG = { 
-    API_BASE: "[https://onemy4-turbd.onrender.com/api](https://onemy4-turbd.onrender.com/api)",
-    GATEWAY_BASE: "[https://ve56ry12fy4.onrender.com/api](https://ve56ry12fy4.onrender.com/api)"
+    API_BASE: "https://onemy4-turbd.onrender.com/api",
+    GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api"
 };
 
 class MiniApp {
@@ -21,20 +21,83 @@ class MiniApp {
 
     initTelegram() {
         if (this.tg) {
-            this.tg.ready();
-            this.tg.expand();
-            this.tg.setHeaderColor('#0b0e14');
-            this.tg.setBackgroundColor('#0b0e14');
+            try {
+                this.tg.ready();
+                this.tg.expand();
+                this.tg.setHeaderColor('#0b0e14');
+                this.tg.setBackgroundColor('#0b0e14');
+            } catch (e) {
+                console.warn("Telegram WebApp initialization error:", e);
+            }
         }
     }
 
-    async bootstrap() {
-        const tgUserData = this.tg?.initDataUnsafe?.user || {
+    // টেলিগ্রাম ইউজার ডাটা নিখুঁতভাবে ডিটেক্ট করার সেফ ফাংশন
+    getTelegramUser() {
+        // ১. সরাসরি Telegram WebApp object চেক
+        if (this.tg?.initDataUnsafe?.user?.id) {
+            const u = this.tg.initDataUnsafe.user;
+            const userData = {
+                id: Number(u.id),
+                first_name: u.first_name || "Player",
+                username: u.username || "",
+                photo_url: u.photo_url || ""
+            };
+            localStorage.setItem("cached_tg_user", JSON.stringify(userData));
+            return userData;
+        }
+
+        // ২. URL-এর initData প্যারামিটার থেকে ব্যাকআপ ডিটেকশন
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tgWebAppData = urlParams.get("tgWebAppData");
+            if (tgWebAppData) {
+                const decoded = decodeURIComponent(tgWebAppData);
+                const userMatch = decoded.match(/user=([^&]+)/);
+                if (userMatch && userMatch[1]) {
+                    const parsedUser = JSON.parse(decodeURIComponent(userMatch[1]));
+                    if (parsedUser.id) {
+                        const userData = {
+                            id: Number(parsedUser.id),
+                            first_name: parsedUser.first_name || "Player",
+                            username: parsedUser.username || "",
+                            photo_url: parsedUser.photo_url || ""
+                        };
+                        localStorage.setItem("cached_tg_user", JSON.stringify(userData));
+                        return userData;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("URL initData parsing fallback error:", e);
+        }
+
+        // ৩. ক্যাশড লোকাল স্টোরেজ চেক
+        const cached = localStorage.getItem("cached_tg_user");
+        if (cached) {
+            try {
+                return JSON.parse(cached);
+            } catch (e) {}
+        }
+
+        // ৪. ডিফল্ট এডমিন ফ্যালব্যাক (পরীক্ষার জন্য)
+        return {
             id: 8908999062,
             first_name: "Admin Player",
             username: "admin_player",
-            photo_url: "[https://via.placeholder.com/40](https://via.placeholder.com/40)"
+            photo_url: "https://via.placeholder.com/40"
         };
+    }
+
+    // ইউজার টেলিগ্রাম আইডি পাওয়ার নিশ্চিত হেডার
+    getTgIdHeader() {
+        if (this.user?.telegram_id) return this.user.telegram_id.toString();
+        const tgUser = this.getTelegramUser();
+        return tgUser.id.toString();
+    }
+
+    async bootstrap() {
+        const tgUserData = this.getTelegramUser();
 
         try {
             const response = await fetch(`${CONFIG.API_BASE}/auth/init`, {
@@ -63,7 +126,7 @@ class MiniApp {
                 alert(data.detail);
             }
         } catch (err) {
-            console.error("Bootstrap error:", err);
+            console.error("Bootstrap authorization error:", err);
         }
     }
 
@@ -97,25 +160,26 @@ class MiniApp {
     }
 
     renderUIState() {
-        if (!this.user) return;
-
+        const currentTgId = this.getTgIdHeader();
         const userNameEl = document.getElementById("user-name");
-        if (userNameEl) userNameEl.innerText = this.user.first_name;
-
-        if (this.user.photo_url) {
-            const userAvatar = document.getElementById("user-avatar");
-            const profileImg = document.getElementById("profile-img");
-            if (userAvatar) userAvatar.src = this.user.photo_url;
-            if (profileImg) profileImg.src = this.user.photo_url;
+        
+        if (userNameEl) {
+            userNameEl.innerText = this.user?.first_name || "Player";
         }
+
+        const userAvatar = document.getElementById("user-avatar");
+        const profileImg = document.getElementById("profile-img");
+        const photoUrl = this.user?.photo_url || "https://via.placeholder.com/40";
+        if (userAvatar) userAvatar.src = photoUrl;
+        if (profileImg) profileImg.src = photoUrl;
 
         const profileName = document.getElementById("profile-name");
         const profileIdTag = document.getElementById("profile-id-tag");
-        if (profileName) profileName.innerText = this.user.first_name;
-        if (profileIdTag) profileIdTag.innerText = `ID: ${this.user.telegram_id}`;
+        if (profileName) profileName.innerText = this.user?.first_name || "Player";
+        if (profileIdTag) profileIdTag.innerText = `ID: ${currentTgId}`;
 
         const cardUserVerify = document.getElementById("card-user-verify");
-        if (this.user.ff_uid && this.user.whatsapp) {
+        if (this.user?.ff_uid && this.user?.whatsapp) {
             const profFfUid = document.getElementById("prof-ff-uid");
             const profWa = document.getElementById("prof-wa");
             if (profFfUid) profFfUid.innerText = `FF UID: ${this.user.ff_uid}`;
@@ -225,7 +289,7 @@ class MiniApp {
 
         const res = await fetch(`${CONFIG.API_BASE}/user/verify`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -244,7 +308,7 @@ class MiniApp {
 
         try {
             const res = await fetch(`${CONFIG.API_BASE}/tournaments`, {
-                headers: { "X-TG-ID": this.user ? this.user.telegram_id.toString() : "0" }
+                headers: { "X-TG-ID": this.getTgIdHeader() }
             });
             const data = await res.json();
             this.allTournaments = data.tournaments || [];
@@ -317,9 +381,10 @@ class MiniApp {
         if (!container) return;
         container.innerHTML = "";
 
+        const currentTgId = Number(this.getTgIdHeader());
         if (this.role !== "CREATOR" && this.role !== "MAIN_ADMIN") return;
 
-        const myTournaments = list.filter(t => t.creator_id === this.user.telegram_id || this.role === "MAIN_ADMIN");
+        const myTournaments = list.filter(t => t.creator_id === currentTgId || this.role === "MAIN_ADMIN");
         if (myTournaments.length === 0) {
             container.innerHTML = `<p class="sub-text">আপনার তৈরি কোনো টুর্নামেন্ট পাওয়া যায়নি।</p>`;
             return;
@@ -363,7 +428,7 @@ class MiniApp {
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/upload-room`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify({
                 tournament_id: tId,
                 room_id: roomId,
@@ -456,7 +521,7 @@ class MiniApp {
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/register-leader`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -493,7 +558,7 @@ class MiniApp {
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/join-squad`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify(payload)
         });
         const data = await res.json();
@@ -515,10 +580,10 @@ class MiniApp {
 
     async loadMySquads() {
         const container = document.getElementById("my-squads-list");
-        if (!container || !this.user) return;
+        if (!container) return;
         try {
             const res = await fetch(`${CONFIG.API_BASE}/user/my-squads`, {
-                headers: { "X-TG-ID": this.user.telegram_id.toString() }
+                headers: { "X-TG-ID": this.getTgIdHeader() }
             });
             const data = await res.json();
             container.innerHTML = "";
@@ -569,7 +634,7 @@ class MiniApp {
         
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/squad/${sqCode}`, {
             method: "DELETE",
-            headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            headers: { "X-TG-ID": this.getTgIdHeader() }
         });
         if (res.ok) {
             alert("স্কোয়াড রিমুভ সফল হয়েছে!");
@@ -594,7 +659,7 @@ class MiniApp {
     async verifyAdReward() {
         const res = await fetch(`${CONFIG.API_BASE}/user/unlock-ad`, {
             method: "POST",
-            headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            headers: { "X-TG-ID": this.getTgIdHeader() }
         });
         if (res.ok) {
             this.isUnlocked = true;
@@ -609,7 +674,7 @@ class MiniApp {
         
         await fetch(`${CONFIG.API_BASE}/tournaments/${tId}`, {
             method: "DELETE",
-            headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            headers: { "X-TG-ID": this.getTgIdHeader() }
         });
         this.loadTournaments();
     }
@@ -618,8 +683,10 @@ class MiniApp {
         e.preventDefault();
         if (!this.checkUnlockGuard()) return;
 
+        const currentTgId = Number(this.getTgIdHeader());
+
         const payload = {
-            telegram_id: this.user.telegram_id,
+            telegram_id: currentTgId,
             squad_name: document.getElementById("cp-squad-name")?.value,
             description: document.getElementById("cp-desc")?.value,
             player_roles: document.getElementById("cp-roles")?.value,
@@ -630,7 +697,7 @@ class MiniApp {
 
         const res = await fetch(`${CONFIG.API_BASE}/creator/profile`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify(payload)
         });
         if (res.ok) alert("✅ Squad Host Profile Saved!");
@@ -651,7 +718,7 @@ class MiniApp {
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/create`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify(payload)
         });
         if (res.ok) {
@@ -685,7 +752,7 @@ class MiniApp {
     // Admin Control Logic
     async loadAdminData() {
         const res = await fetch(`${CONFIG.API_BASE}/admin/dashboard`, {
-            headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            headers: { "X-TG-ID": this.getTgIdHeader() }
         });
         const data = await res.json();
         if (res.ok) {
@@ -744,7 +811,7 @@ class MiniApp {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
-                        "X-TG-ID": this.user.telegram_id.toString()
+                        "X-TG-ID": this.getTgIdHeader()
                     },
                     body: JSON.stringify(jsonContent)
                 });
@@ -823,7 +890,7 @@ class MiniApp {
 
         await fetch(`${CONFIG.API_BASE}/admin/announcement/add`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify({ text: text, image_url: img })
         });
         document.getElementById("adm-popup-msg").value = "";
@@ -835,7 +902,7 @@ class MiniApp {
     async deleteAnnouncement(annId) {
         await fetch(`${CONFIG.API_BASE}/admin/announcement/${annId}`, {
             method: "DELETE",
-            headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            headers: { "X-TG-ID": this.getTgIdHeader() }
         });
         this.loadAdminData();
     }
@@ -847,7 +914,7 @@ class MiniApp {
         };
         await fetch(`${CONFIG.API_BASE}/admin/creators/save`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify(payload)
         });
         alert("✅ Sub-Admin added successfully!");
@@ -858,7 +925,7 @@ class MiniApp {
         if (!confirm("Are you sure you want to remove this host role?")) return;
         await fetch(`${CONFIG.API_BASE}/admin/creators/${creatorId}`, {
             method: "DELETE",
-            headers: { "X-TG-ID": this.user.telegram_id.toString() }
+            headers: { "X-TG-ID": this.getTgIdHeader() }
         });
         this.loadAdminData();
     }
@@ -870,7 +937,7 @@ class MiniApp {
         }
         await fetch(`${CONFIG.API_BASE}/admin/users/ban`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify({ telegram_id: tgId })
         });
         this.loadAdminData();
@@ -879,7 +946,7 @@ class MiniApp {
     async unbanUserByAdmin(tgId) {
         await fetch(`${CONFIG.API_BASE}/admin/users/unban`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
             body: JSON.stringify({ telegram_id: tgId })
         });
         this.loadAdminData();
