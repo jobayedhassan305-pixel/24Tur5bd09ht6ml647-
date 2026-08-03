@@ -1,7 +1,7 @@
 
 const CONFIG = { 
-    API_BASE: "https://onemy4-turbd.onrender.com/api",
-    GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api" // আপনার ভেরিফিকেশন সার্ভার ইউআরএল
+    API_BASE: "[https://onemy4-turbd.onrender.com/api](https://onemy4-turbd.onrender.com/api)",
+    GATEWAY_BASE: "[https://ve56ry12fy4.onrender.com/api](https://ve56ry12fy4.onrender.com/api)"
 };
 
 class MiniApp {
@@ -11,9 +11,8 @@ class MiniApp {
         this.role = "USER";
         this.isUnlocked = false;
         this.activeTournament = null;
-        this.taskRedirectTimer = null;
-        this.pendingRegData = null;
         this.userJoinedTournamentIds = new Set();
+        this.allTournaments = [];
 
         this.initTelegram();
         this.bindEvents();
@@ -31,10 +30,10 @@ class MiniApp {
 
     async bootstrap() {
         const tgUserData = this.tg?.initDataUnsafe?.user || {
-            id: 8908999062, // Default Main Admin ID
+            id: 8908999062,
             first_name: "Admin Player",
             username: "admin_player",
-            photo_url: "https://via.placeholder.com/40"
+            photo_url: "[https://via.placeholder.com/40](https://via.placeholder.com/40)"
         };
 
         try {
@@ -55,7 +54,6 @@ class MiniApp {
                 this.role = data.role;
                 this.isUnlocked = data.is_unlocked;
                 this.renderUIState();
-                await this.loadUserHistory();
                 this.loadTournaments();
                 
                 if (data.announcements && data.announcements.length > 0) {
@@ -69,7 +67,6 @@ class MiniApp {
         }
     }
 
-    // Lock Guard: Checks 24h Unlock Access
     checkUnlockGuard() {
         if (!this.isUnlocked) {
             alert("🔒 এই সুবিধাটি পেতে প্রথমে উপরে 'Unlock 24h Access' বাটনে ক্লিক করে আনলক করুন!");
@@ -123,7 +120,7 @@ class MiniApp {
             const profWa = document.getElementById("prof-wa");
             if (profFfUid) profFfUid.innerText = `FF UID: ${this.user.ff_uid}`;
             if (profWa) profWa.innerText = `WhatsApp: ${this.user.whatsapp}`;
-            if (cardUserVerify) cardUserVerify.classList.add("hidden"); // ভেরিফাই সফল হলে বাটন ও কার্ড হাইড
+            if (cardUserVerify) cardUserVerify.classList.add("hidden");
         } else {
             if (cardUserVerify) cardUserVerify.classList.remove("hidden");
         }
@@ -136,7 +133,7 @@ class MiniApp {
                 badge.className = "badge unlocked";
                 badge.innerText = "UNLOCKED 24H";
             }
-            if (btnAdUnlock) btnAdUnlock.classList.add("hidden"); // আনলক থাকলে এড বাটন হাইড
+            if (btnAdUnlock) btnAdUnlock.classList.add("hidden");
         } else {
             if (badge) {
                 badge.className = "badge locked";
@@ -204,7 +201,7 @@ class MiniApp {
         const codeBox = document.getElementById("sub-admin-script-box");
         if (codeBox && codeBox.value) {
             navigator.clipboard.writeText(codeBox.value).then(() => {
-                alert("📋 সাব-এডমিন ওয়েবসাইট কোড কপি হয়েছে! আপনার ওয়েবসাইটের HTML ফাইলের ভেতর বসান।");
+                alert("📋 সাব-এডমিন ওয়েবসাইট কোড কপি হয়েছে!");
             });
         }
     }
@@ -215,7 +212,6 @@ class MiniApp {
         if (targetView) targetView.classList.add("active");
         if (viewId === "view-profile") {
             this.loadMySquads();
-            this.loadUserHistory();
         }
     }
 
@@ -247,56 +243,140 @@ class MiniApp {
         if (!container) return;
 
         try {
-            const res = await fetch(`${CONFIG.API_BASE}/tournaments`);
-            const data = await res.json();
-            container.innerHTML = "";
-            window.tournamentCache = data.tournaments;
-
-            const hostControls = document.getElementById("creator-active-controls");
-            if (hostControls) hostControls.innerHTML = "";
-
-            if (!data.tournaments || data.tournaments.length === 0) {
-                container.innerHTML = `<div class="sub-text align-center">বর্তমানে কোনো টুর্নামেন্ট চালু নেই।</div>`;
-                return;
-            }
-
-            data.tournaments.forEach(t => {
-                const isAlreadyJoined = this.userJoinedTournamentIds.has(t.id);
-                const card = document.createElement("div");
-                card.className = "glass-card tournament-item";
-                
-                let actionBtnHtml = isAlreadyJoined 
-                    ? `<button class="btn-action full-width margin-top" disabled style="opacity: 0.6; cursor: not-allowed; background: #2e7d32;">✅ Joined</button>`
-                    : `<button class="btn-action full-width margin-top" onclick="app.openTournamentDetail('${t.id}')">Join / View Details</button>`;
-
-                card.innerHTML = `
-                    <div class="tournament-header">
-                        <span>${t.code} (${t.total_joined_players}/${t.max_players})</span>
-                        <span style="color:var(--accent-orange); cursor:pointer;" onclick="app.openHostProfile(${t.creator_id})">Squad Host 🔗</span>
-                    </div>
-                    <div class="tournament-title">${t.title}</div>
-                    <div class="tournament-meta">
-                        <span>🏆 ${t.prize}</span> | <span>🕒 ${t.start_time}</span>
-                    </div>
-                    ${actionBtnHtml}
-                `;
-                container.appendChild(card);
-
-                if ((this.role === "CREATOR" || this.role === "MAIN_ADMIN") && t.creator_id === this.user.telegram_id) {
-                    if (hostControls) {
-                        hostControls.innerHTML += `
-                            <div class="player-box margin-top">
-                                <h4>${t.title}</h4>
-                                <p class="sub-text">Status: ${t.status}</p>
-                                <button class="btn-action full-width margin-top" onclick="app.triggerStartMatch('${t.id}')">▶ Start Match (Auto Delete in 17m)</button>
-                                <button class="btn-secondary full-width margin-top" onclick="app.deleteTournament('${t.id}')">🗑 Delete Tournament</button>
-                            </div>
-                        `;
-                    }
-                }
+            const res = await fetch(`${CONFIG.API_BASE}/tournaments`, {
+                headers: { "X-TG-ID": this.user ? this.user.telegram_id.toString() : "0" }
             });
+            const data = await res.json();
+            this.allTournaments = data.tournaments || [];
+            window.tournamentCache = this.allTournaments;
+            this.renderTournamentsList(this.allTournaments);
+            this.renderCreatorRoomPanel(this.allTournaments);
         } catch (err) {
             container.innerHTML = `<div class="sub-text">Error loading tournaments.</div>`;
+        }
+    }
+
+    searchTournaments() {
+        const q = (document.getElementById("input-search-tournaments")?.value || "").toLowerCase().trim();
+        if (!q) {
+            this.renderTournamentsList(this.allTournaments);
+            return;
+        }
+        const filtered = this.allTournaments.filter(t => 
+            (t.code && t.code.toLowerCase().includes(q)) || 
+            (t.start_time && t.start_time.toLowerCase().includes(q)) ||
+            (t.title && t.title.toLowerCase().includes(q))
+        );
+        this.renderTournamentsList(filtered);
+    }
+
+    renderTournamentsList(list) {
+        const container = document.getElementById("tournament-list");
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (!list || list.length === 0) {
+            container.innerHTML = `<div class="sub-text align-center">বর্তমানে কোনো টুর্নামেন্ট চালু নেই।</div>`;
+            return;
+        }
+
+        list.forEach(t => {
+            const card = document.createElement("div");
+            card.className = "glass-card tournament-item";
+            
+            let statusBadge = `<span style="color:var(--accent-gold); font-weight:bold;">🕒 ${t.start_time}</span>`;
+            if (t.is_cancelled) {
+                statusBadge = `<span style="color:#e53e3e; font-weight:bold;">⚠️ ক্যানসেল করা হয়েছে</span>`;
+            } else if (t.status === "STARTED") {
+                statusBadge = `<span style="color:#2e7d32; font-weight:bold;">▶ Match Running</span>`;
+            }
+
+            let roomNotice = "";
+            if (t.is_cancelled) {
+                roomNotice = `<div class="player-box margin-top" style="border-color:#e53e3e; color:#feb2b2;">${t.cancel_message}</div>`;
+            }
+
+            card.innerHTML = `
+                <div class="tournament-header">
+                    <span>${t.code} (${t.total_joined_squads}/12 Squads)</span>
+                    <span style="color:var(--accent-orange); cursor:pointer;" onclick="app.openHostProfile(${t.creator_id})">Squad Host 🔗</span>
+                </div>
+                <div class="tournament-title">${t.title}</div>
+                <div class="tournament-meta">
+                    <span>🏆 ${t.prize}</span> | ${statusBadge}
+                </div>
+                ${roomNotice}
+                <button class="btn-action full-width margin-top" onclick="app.openTournamentDetail('${t.id}')">Join / View Details</button>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    renderCreatorRoomPanel(list) {
+        const container = document.getElementById("creator-room-management");
+        if (!container) return;
+        container.innerHTML = "";
+
+        if (this.role !== "CREATOR" && this.role !== "MAIN_ADMIN") return;
+
+        const myTournaments = list.filter(t => t.creator_id === this.user.telegram_id || this.role === "MAIN_ADMIN");
+        if (myTournaments.length === 0) {
+            container.innerHTML = `<p class="sub-text">আপনার তৈরি কোনো টুর্নামেন্ট পাওয়া যায়নি।</p>`;
+            return;
+        }
+
+        myTournaments.forEach(t => {
+            container.innerHTML += `
+                <div class="player-box margin-top">
+                    <h4>${t.title} (${t.code})</h4>
+                    <p class="sub-text">Start Time: ${t.start_time}</p>
+                    <div class="input-group margin-top">
+                        <label>Room ID</label>
+                        <input type="text" id="rm-id-${t.id}" value="${t.room_id !== 'PROTECTED' ? t.room_id || '' : ''}" placeholder="Enter Room ID">
+                    </div>
+                    <div class="input-group">
+                        <label>Room Password</label>
+                        <input type="text" id="rm-pass-${t.id}" value="${t.room_password !== 'PROTECTED' ? t.room_password || '' : ''}" placeholder="Enter Password">
+                    </div>
+                    <div class="input-group">
+                        <label>Edit Start Time (Optional)</label>
+                        <input type="text" id="rm-time-${t.id}" value="${t.start_time || ''}">
+                    </div>
+                    <button class="btn-action full-width margin-top" onclick="app.submitRoomCredentials('${t.id}')">📤 Save Room Credentials</button>
+                    <button class="btn-secondary full-width margin-top" onclick="app.deleteTournament('${t.id}')">🗑 Delete Tournament</button>
+                </div>
+            `;
+        });
+    }
+
+    async submitRoomCredentials(tId) {
+        if (!this.checkUnlockGuard()) return;
+
+        const roomId = document.getElementById(`rm-id-${tId}`)?.value.trim();
+        const roomPass = document.getElementById(`rm-pass-${tId}`)?.value.trim();
+        const newTime = document.getElementById(`rm-time-${tId}`)?.value.trim();
+
+        if (!roomId || !roomPass) {
+            alert("রুম আইডি এবং পাসওয়ার্ড উভয়ই লিখুন!");
+            return;
+        }
+
+        const res = await fetch(`${CONFIG.API_BASE}/tournaments/upload-room`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
+            body: JSON.stringify({
+                tournament_id: tId,
+                room_id: roomId,
+                room_password: roomPass,
+                new_start_time: newTime
+            })
+        });
+
+        if (res.ok) {
+            alert("✅ রুম আইডি ও পাসওয়ার্ড সফলভাবে আপলোড হয়েছে!");
+            this.loadTournaments();
+        } else {
+            alert("⚠️ রুম তথ্য সেভ করতে সমস্যা হয়েছে!");
         }
     }
 
@@ -310,9 +390,24 @@ class MiniApp {
 
         const card = document.getElementById("tournament-detail-card");
         if (card) {
+            let roomInfoBox = "";
+            if (t.has_credentials && t.room_id !== "PROTECTED") {
+                roomInfoBox = `
+                    <div class="player-box margin-top" style="border: 2px solid var(--accent-orange);">
+                        <h4 style="color:var(--accent-gold)">🔑 Room Credentials Access</h4>
+                        <p><strong>Room ID:</strong> ${t.room_id}</p>
+                        <p><strong>Password:</strong> ${t.room_password}</p>
+                    </div>
+                `;
+            } else if (t.is_cancelled) {
+                roomInfoBox = `<div class="player-box margin-top" style="border-color:#e53e3e; color:#feb2b2;">${t.cancel_message}</div>`;
+            }
+
             card.innerHTML = `
-                <h2>${t.title}</h2>
-                <p><strong>Lobby Progress:</strong> ${t.total_joined_players}/${t.max_players} Players Joined</p>
+                <h2>${t.title} (${t.code})</h2>
+                <p><strong>Lobby Slots:</strong> ${t.total_joined_squads}/12 Squads Joined</p>
+                <p><strong>Start Time:</strong> ${t.start_time}</p>
+                ${roomInfoBox}
                 <p class="margin-top"><strong>Rules:</strong> ${t.rules}</p>
             `;
         }
@@ -366,16 +461,15 @@ class MiniApp {
         });
         const data = await res.json();
         if (res.ok) {
-            if (payload.tournament_id) this.userJoinedTournamentIds.add(payload.tournament_id);
             const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
             alert(`🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}\n\n১৫ সেকেন্ড অবস্থানের জন্য সাব-এডমিনের সাইটে পাঠানো হচ্ছে...`);
             
-            // সরাসরি ক্রোম / এক্সটার্নাল ব্রাউজার ওপেন
             if (this.tg && this.tg.openLink) {
                 this.tg.openLink(redirectUrl);
             } else {
                 window.open(redirectUrl, "_blank");
             }
+            this.loadTournaments();
             this.navigate("view-home");
         } else {
             alert(`⚠️ ${data.detail}`);
@@ -407,12 +501,12 @@ class MiniApp {
             const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
             alert("✅ স্কোয়াডে জয়েন সফল হয়েছে!\n\n১৫ সেকেন্ড অবস্থানের জন্য সাব-এডমিনের সাইটে পাঠানো হচ্ছে...");
             
-            // সরাসরি ক্রোম / এক্সটার্নাল ব্রাউজার ওপেন
             if (this.tg && this.tg.openLink) {
                 this.tg.openLink(redirectUrl);
             } else {
                 window.open(redirectUrl, "_blank");
             }
+            this.loadTournaments();
             this.navigate("view-home");
         } else {
             alert(`⚠️ ${data.detail}`);
@@ -429,21 +523,38 @@ class MiniApp {
             const data = await res.json();
             container.innerHTML = "";
             if (!data.squads || data.squads.length === 0) {
-                container.innerHTML = `<p class="sub-text">আপনার তৈরি কোনো সক্রিয় স্কোয়াড নেই।</p>`;
+                container.innerHTML = `<p class="sub-text">আপনার যুক্ত থাকা কোনো সক্রিয় স্কোয়াড নেই।</p>`;
                 return;
             }
 
             data.squads.forEach(sq => {
-                let mList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id})</li>`).join("");
+                let mList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id}) - ${m.role}</li>`).join("");
+                
+                let roomBox = "";
+                if (sq.room_id && sq.room_password) {
+                    roomBox = `
+                        <div class="player-box margin-top" style="background:#1c2d20; border-color:#2e7d32;">
+                            <strong style="color:#81c784;">🔑 Room Access Code</strong>
+                            <div>Room ID: <code>${sq.room_id}</code></div>
+                            <div>Password: <code>${sq.room_password}</code></div>
+                        </div>
+                    `;
+                } else if (sq.is_cancelled) {
+                    roomBox = `<div class="player-box margin-top" style="border-color:#e53e3e; color:#feb2b2;">${sq.cancel_message}</div>`;
+                } else {
+                    roomBox = `<div class="sub-text margin-top">⏳ রুম আইডি ও পাসওয়ার্ড হোস্ট আপলোড করলে এখানে দেখাবে।</div>`;
+                }
+
                 container.innerHTML += `
                     <div class="player-box margin-top">
-                        <div><strong>${sq.squad_name}</strong></div>
+                        <div><strong>${sq.tournament_title} (${sq.squad_name})</strong></div>
                         <div class="sub-text" style="color:var(--accent-orange); display: flex; align-items: center; gap: 8px;">
                             Private Code: <code>${sq.squad_code}</code>
                             <button class="btn-secondary" style="padding: 2px 8px; font-size: 11px;" onclick="app.copyToClipboard('${sq.squad_code}')">📋 Copy</button>
                         </div>
-                        <ul class="sub-text">${mList}</ul>
-                        <button class="btn-secondary full-width margin-top" onclick="app.deleteMySquad('${sq.squad_code}')">❌ Delete Squad</button>
+                        <ul class="sub-text margin-top">${mList}</ul>
+                        ${roomBox}
+                        <button class="btn-secondary full-width margin-top" onclick="app.deleteMySquad('${sq.squad_code}')">❌ Leave / Delete Squad</button>
                     </div>
                 `;
             });
@@ -452,66 +563,28 @@ class MiniApp {
         }
     }
 
-    async loadUserHistory() {
-        const container = document.getElementById("joined-history-list");
-        if (!container || !this.user) return;
-        try {
-            const res = await fetch(`${CONFIG.API_BASE}/user/history`, {
-                headers: { "X-TG-ID": this.user.telegram_id.toString() }
-            });
-            const data = await res.json();
-            if (container) container.innerHTML = "";
-
-            this.userJoinedTournamentIds.clear();
-
-            if (!data.history || data.history.length === 0) {
-                if (container) container.innerHTML = `<p class="sub-text">আপনি এখনো কোনো টুর্নামেন্টে অংশ নেননি।</p>`;
-                return;
-            }
-
-            data.history.forEach(item => {
-                if (item.tournament_id) {
-                    this.userJoinedTournamentIds.add(item.tournament_id);
-                }
-                if (container) {
-                    container.innerHTML += `
-                        <div class="player-box margin-top">
-                            <div><strong>${item.tournament_title}</strong></div>
-                            <div class="sub-text">Squad: ${item.squad_name}</div>
-                            <div class="sub-text">Joined At: ${item.joined_at}</div>
-                        </div>
-                    `;
-                }
-            });
-        } catch (err) {
-            if (container) container.innerHTML = `<p class="sub-text">History unavailable.</p>`;
-        }
-    }
-
     async deleteMySquad(sqCode) {
         if (!this.checkUnlockGuard()) return;
-        if (!confirm("আপনি কি নিশ্চিত আপনার স্কোয়াডটি ডিলিট করতে চান?")) return;
+        if (!confirm("আপনি কি নিশ্চিত এই স্কোয়াড থেকে বের হতে বা ডিলিট করতে চান?")) return;
         
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/squad/${sqCode}`, {
             method: "DELETE",
             headers: { "X-TG-ID": this.user.telegram_id.toString() }
         });
         if (res.ok) {
-            alert("স্কোয়াড ডিলিট সফল হয়েছে!");
+            alert("স্কোয়াড রিমুভ সফল হয়েছে!");
             this.loadMySquads();
-            await this.loadUserHistory();
             this.loadTournaments();
         }
     }
 
-    // Monetag Rewarded Popup Ad Integration
     async showAdAndUnlock() {
         if (typeof show_11466993 === 'function') {
             show_11466993('pop').then(async () => {
                 await this.verifyAdReward();
             }).catch((e) => {
                 console.error("Ad error:", e);
-                alert("Ad failed to load. Please try again.");
+                this.verifyAdReward();
             });
         } else {
             await this.verifyAdReward();
@@ -530,23 +603,9 @@ class MiniApp {
         }
     }
 
-    async triggerStartMatch(tId) {
-        if (!this.checkUnlockGuard()) return;
-
-        const res = await fetch(`${CONFIG.API_BASE}/tournaments/start-match`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.user.telegram_id.toString() },
-            body: JSON.stringify({ tournament_id: tId })
-        });
-        if (res.ok) {
-            alert("▶ Match Started! Tournament will automatically delete in 17 minutes.");
-            this.loadTournaments();
-        }
-    }
-
     async deleteTournament(tId) {
         if (!this.checkUnlockGuard()) return;
-        if (!confirm("Are you sure you want to delete this tournament?")) return;
+        if (!confirm("আপনি কি নিশ্চিত টুর্নামেন্টটি মুছে ফেলতে চান?")) return;
         
         await fetch(`${CONFIG.API_BASE}/tournaments/${tId}`, {
             method: "DELETE",
@@ -623,7 +682,7 @@ class MiniApp {
         }
     }
 
-    // Main Admin Control Logic
+    // Admin Control Logic
     async loadAdminData() {
         const res = await fetch(`${CONFIG.API_BASE}/admin/dashboard`, {
             headers: { "X-TG-ID": this.user.telegram_id.toString() }
@@ -637,7 +696,6 @@ class MiniApp {
             window.allAdminUsers = data.users;
             window.allBannedUsers = data.banned_users;
 
-            // Render Announcements
             const annContainer = document.getElementById("adm-announcements-list");
             if (annContainer) {
                 annContainer.innerHTML = "";
@@ -652,7 +710,6 @@ class MiniApp {
                 });
             }
 
-            // Render Sub-Admins
             const crContainer = document.getElementById("adm-creators-list");
             if (crContainer) {
                 crContainer.innerHTML = "";
@@ -668,6 +725,43 @@ class MiniApp {
 
             this.filterAdminUsers();
         }
+    }
+
+    async uploadDatabaseJson() {
+        const fileInput = document.getElementById("adm-json-file");
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+            alert("অনুগ্রহ করে একটি .json ফাইল সিলেক্ট করুন!");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            try {
+                const jsonContent = JSON.parse(e.target.result);
+                const res = await fetch(`${CONFIG.API_BASE}/admin/import-data`, {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "X-TG-ID": this.user.telegram_id.toString()
+                    },
+                    body: JSON.stringify(jsonContent)
+                });
+                const responseData = await res.json();
+                if (res.ok) {
+                    alert("✅ " + responseData.message);
+                    this.loadAdminData();
+                    this.loadTournaments();
+                } else {
+                    alert("⚠️ ডাটা ইমপোর্ট ব্যর্থ হয়েছে!");
+                }
+            } catch (err) {
+                alert("⚠️ সিলেক্ট করা JSON ফাইলটিতে ফরম্যাট সংক্রান্ত ভুল রয়েছে!");
+            }
+        };
+
+        reader.readAsText(file);
     }
 
     filterAdminUsers() {
@@ -690,9 +784,7 @@ class MiniApp {
                 usrContainer.innerHTML += `
                     <div class="player-box">
                         <div><strong>${u.first_name}</strong> (@${u.username || 'N/A'}) ${isMainAdmin ? '👑 (Main Admin)' : ''}</div>
-                        <div class="sub-text">
-                            TG ID: ${u.telegram_id}
-                        </div>
+                        <div class="sub-text">TG ID: ${u.telegram_id}</div>
                         <div class="sub-text">
                             FF UID: ${u.ff_uid || 'Not Set'}
                             ${u.ff_uid ? `<button class="btn-secondary" style="padding:2px 8px; font-size:11px; margin-left:5px;" onclick="app.copyToClipboard('${u.ff_uid}')">📋 Copy</button>` : ''}
