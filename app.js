@@ -1,7 +1,8 @@
-
 const CONFIG = { 
     API_BASE: "https://onemy4-turbd.onrender.com/api",
-    GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api"
+    GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api",
+    // ম্যানুয়ালি সাব-এডমিন আইডি পরিবর্তন করার সুবিধা
+    MANUAL_SUB_ADMIN_ID: []
 };
 
 class MiniApp {
@@ -11,7 +12,6 @@ class MiniApp {
         this.role = "USER";
         this.isUnlocked = false;
         this.activeTournament = null;
-        this.userJoinedTournamentIds = new Set();
         this.allTournaments = [];
 
         this.initTelegram();
@@ -32,9 +32,8 @@ class MiniApp {
         }
     }
 
-    // টেলিগ্রাম ইউজার ডাটা নিখুঁতভাবে ডিটেক্ট করার সেফ ফাংশন
+    // টেলিগ্রাম ইউজার ডাটা ডিটেক্ট করার সেফ ফাংশন
     getTelegramUser() {
-        // ১. সরাসরি Telegram WebApp object চেক
         if (this.tg?.initDataUnsafe?.user?.id) {
             const u = this.tg.initDataUnsafe.user;
             const userData = {
@@ -47,7 +46,6 @@ class MiniApp {
             return userData;
         }
 
-        // ২. URL-এর initData প্যারামিটার থেকে ব্যাকআপ ডিটেকশন
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const tgWebAppData = urlParams.get("tgWebAppData");
@@ -72,7 +70,6 @@ class MiniApp {
             console.warn("URL initData parsing fallback error:", e);
         }
 
-        // ৩. ক্যাশড লোকাল স্টোরেজ চেক
         const cached = localStorage.getItem("cached_tg_user");
         if (cached) {
             try {
@@ -80,7 +77,6 @@ class MiniApp {
             } catch (e) {}
         }
 
-        // ৪. ডিফল্ট এডমিন ফ্যালব্যাক (পরীক্ষার জন্য)
         return {
             id: 8908999062,
             first_name: "Admin Player",
@@ -89,7 +85,6 @@ class MiniApp {
         };
     }
 
-    // ইউজার টেলিগ্রাম আইডি পাওয়ার নিশ্চিত হেডার
     getTgIdHeader() {
         if (this.user?.telegram_id) return this.user.telegram_id.toString();
         const tgUser = this.getTelegramUser();
@@ -178,17 +173,6 @@ class MiniApp {
         if (profileName) profileName.innerText = this.user?.first_name || "Player";
         if (profileIdTag) profileIdTag.innerText = `ID: ${currentTgId}`;
 
-        const cardUserVerify = document.getElementById("card-user-verify");
-        if (this.user?.ff_uid && this.user?.whatsapp) {
-            const profFfUid = document.getElementById("prof-ff-uid");
-            const profWa = document.getElementById("prof-wa");
-            if (profFfUid) profFfUid.innerText = `FF UID: ${this.user.ff_uid}`;
-            if (profWa) profWa.innerText = `WhatsApp: ${this.user.whatsapp}`;
-            if (cardUserVerify) cardUserVerify.classList.add("hidden");
-        } else {
-            if (cardUserVerify) cardUserVerify.classList.remove("hidden");
-        }
-
         const badge = document.getElementById("unlock-badge");
         const btnAdUnlock = document.getElementById("btn-ad-unlock");
 
@@ -206,6 +190,8 @@ class MiniApp {
             if (btnAdUnlock) btnAdUnlock.classList.remove("hidden");
         }
 
+        const isManualSubAdmin = CONFIG.MANUAL_SUB_ADMIN_ID.includes(Number(currentTgId));
+
         const tabAdmin = document.getElementById("tab-admin");
         if (tabAdmin) {
             if (this.role === "MAIN_ADMIN") {
@@ -218,7 +204,7 @@ class MiniApp {
 
         const tabCreator = document.getElementById("tab-creator");
         if (tabCreator) {
-            if (this.role === "CREATOR" || this.role === "MAIN_ADMIN") {
+            if (this.role === "CREATOR" || this.role === "MAIN_ADMIN" || isManualSubAdmin) {
                 tabCreator.classList.remove("hidden");
                 this.generateSubAdminScriptCode();
             } else {
@@ -247,11 +233,6 @@ class MiniApp {
             e.preventDefault();
             this.handleCreateTournament();
         });
-
-        document.getElementById("form-user-verify")?.addEventListener("submit", (e) => {
-            e.preventDefault();
-            this.handleUserVerification();
-        });
     }
 
     generateSubAdminScriptCode() {
@@ -276,29 +257,6 @@ class MiniApp {
         if (targetView) targetView.classList.add("active");
         if (viewId === "view-profile") {
             this.loadMySquads();
-        }
-    }
-
-    async handleUserVerification() {
-        if (!this.checkUnlockGuard()) return;
-
-        const payload = {
-            ff_uid: document.getElementById("input-verify-uid")?.value.trim(),
-            whatsapp_number: document.getElementById("input-verify-wa")?.value.trim()
-        };
-
-        const res = await fetch(`${CONFIG.API_BASE}/user/verify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok) {
-            this.user = data.user;
-            this.renderUIState();
-            alert("✅ তথ্য সফলভাবে ভেরিফাই ও সেভ হয়েছে!");
-        } else {
-            alert(`⚠️ ${data.detail}`);
         }
     }
 
@@ -382,9 +340,10 @@ class MiniApp {
         container.innerHTML = "";
 
         const currentTgId = Number(this.getTgIdHeader());
-        if (this.role !== "CREATOR" && this.role !== "MAIN_ADMIN") return;
+        const isManualSubAdmin = CONFIG.MANUAL_SUB_ADMIN_ID.includes(currentTgId);
+        if (this.role !== "CREATOR" && this.role !== "MAIN_ADMIN" && !isManualSubAdmin) return;
 
-        const myTournaments = list.filter(t => t.creator_id === currentTgId || this.role === "MAIN_ADMIN");
+        const myTournaments = list.filter(t => t.creator_id === currentTgId || this.role === "MAIN_ADMIN" || isManualSubAdmin);
         if (myTournaments.length === 0) {
             container.innerHTML = `<p class="sub-text">আপনার তৈরি কোনো টুর্নামেন্ট পাওয়া যায়নি।</p>`;
             return;
@@ -506,12 +465,6 @@ class MiniApp {
     async handleLeaderRegistration() {
         if (!this.checkUnlockGuard()) return;
 
-        if (!this.user?.ff_uid) {
-            alert("⚠️ আগে আপনার প্রোফাইলে গিয়ে Free Fire UID দিয়ে ভেরিফাই করুন!");
-            this.navigate("view-profile");
-            return;
-        }
-
         const payload = {
             tournament_id: document.getElementById("reg-tournament-id")?.value,
             squad_name: document.getElementById("reg-squad-name")?.value,
@@ -527,7 +480,7 @@ class MiniApp {
         const data = await res.json();
         if (res.ok) {
             const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
-            alert(`🎉 Squad Registration Successful!\nSquad Code: ${data.squad_code}\n\n১৫ সেকেন্ড অবস্থানের জন্য সাব-এডমিনের সাইটে পাঠানো হচ্ছে...`);
+            alert(`🎉 Squad Created!\nSquad Code: ${data.squad_code}\n\n⚠️ রেজিস্ট্রেশন নিশ্চিত করতে এখন সাব-এডমিনের সাইটে পাঠানো হচ্ছে। সেখানে ১৫ সেকেন্ড অপেক্ষা করে "Registration Now" বাটনে ক্লিক করতে হবে!`);
             
             if (this.tg && this.tg.openLink) {
                 this.tg.openLink(redirectUrl);
@@ -544,12 +497,6 @@ class MiniApp {
     async submitJoinSquad() {
         if (!this.checkUnlockGuard()) return;
 
-        if (!this.user?.ff_uid) {
-            alert("⚠️ আগে প্রোফাইল ট্যাবে গিয়ে আপনার FF UID সেভ করুন!");
-            this.navigate("view-profile");
-            return;
-        }
-
         const payload = {
             squad_code: document.getElementById("join-sq-code")?.value.trim(),
             nickname: document.getElementById("join-p-nick")?.value.trim(),
@@ -564,7 +511,7 @@ class MiniApp {
         const data = await res.json();
         if (res.ok) {
             const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
-            alert("✅ স্কোয়াডে জয়েন সফল হয়েছে!\n\n১৫ সেকেন্ড অবস্থানের জন্য সাব-এডমিনের সাইটে পাঠানো হচ্ছে...");
+            alert("✅ জয়েনিং শুরু হয়েছে!\n\n⚠️ জয়েনিং নিশ্চিত করতে সাব-এডমিনের সাইটে ১৫ সেকেন্ড অপেক্ষা করে \"Join Now\" বাটনে ক্লিক করুন!");
             
             if (this.tg && this.tg.openLink) {
                 this.tg.openLink(redirectUrl);
@@ -645,7 +592,8 @@ class MiniApp {
 
     async showAdAndUnlock() {
         if (typeof show_11466993 === 'function') {
-            show_11466993('pop').then(async () => {
+            show_11466993().then(async () => {
+                alert('You have seen an ad!');
                 await this.verifyAdReward();
             }).catch((e) => {
                 console.error("Ad error:", e);
@@ -844,22 +792,13 @@ class MiniApp {
             const isMainAdmin = (u.telegram_id === 8908999062);
 
             const matchName = (u.first_name || "").toLowerCase().includes(query);
-            const matchUID = (u.ff_uid || "").toLowerCase().includes(query);
             const matchTG = u.telegram_id.toString().includes(query);
 
-            if (!query || matchName || matchUID || matchTG) {
+            if (!query || matchName || matchTG) {
                 usrContainer.innerHTML += `
                     <div class="player-box">
                         <div><strong>${u.first_name}</strong> (@${u.username || 'N/A'}) ${isMainAdmin ? '👑 (Main Admin)' : ''}</div>
                         <div class="sub-text">TG ID: ${u.telegram_id}</div>
-                        <div class="sub-text">
-                            FF UID: ${u.ff_uid || 'Not Set'}
-                            ${u.ff_uid ? `<button class="btn-secondary" style="padding:2px 8px; font-size:11px; margin-left:5px;" onclick="app.copyToClipboard('${u.ff_uid}')">📋 Copy</button>` : ''}
-                        </div>
-                        <div class="sub-text">
-                            WhatsApp: ${u.whatsapp || 'Not Set'}
-                            ${u.whatsapp ? `<button class="btn-secondary" style="padding:2px 8px; font-size:11px; margin-left:5px;" onclick="app.copyToClipboard('${u.whatsapp}')">📋 Copy</button>` : ''}
-                        </div>
                         ${isMainAdmin ? `
                             <button class="btn-secondary full-width margin-top" disabled style="opacity:0.5;">👑 Main Admin Protected</button>
                         ` : isBanned 
@@ -956,5 +895,4 @@ class MiniApp {
 window.addEventListener("DOMContentLoaded", () => {
     window.app = new MiniApp();
 });
-
 
