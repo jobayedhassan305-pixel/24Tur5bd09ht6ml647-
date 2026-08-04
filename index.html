@@ -1,11 +1,13 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Free Fire Esports Engine</title>
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Monetag Ads SDK -->
     <script src='//libtl.com/sdk.js' data-zone='11466993' data-sdk='show_11466993'></script>
 
     <link rel="stylesheet" href="style.css">
@@ -58,8 +60,8 @@
                         <input type="text" id="join-p-nick" placeholder="In-Game Nickname">
                     </div>
                     <div class="input-group">
-                        <label>Free Fire UID</label>
-                        <input type="text" id="join-p-uid" placeholder="Free Fire UID">
+                        <label>Free Fire Game UID</label>
+                        <input type="text" id="join-p-uid" placeholder="Free Fire Game UID">
                     </div>
                     <button class="btn-action full-width margin-top" onclick="app.submitJoinSquad()">Join Squad Lobby</button>
                 </div>
@@ -84,7 +86,7 @@
                         <div class="player-box">
                             <span class="player-title">Leader Details</span>
                             <input type="text" id="p1-nick" placeholder="FF Nickname" required>
-                            <input type="text" id="p1-id" placeholder="FF UID" required>
+                            <input type="text" id="p1-id" placeholder="FF Game UID" required>
                         </div>
                         <button type="submit" class="btn-action full-width margin-top">Create Squad & Register</button>
                     </form>
@@ -115,23 +117,7 @@
                     <img id="profile-img" src="https://via.placeholder.com/80" class="profile-large-avatar">
                     <h2 id="profile-name">---</h2>
                     <div id="profile-id-tag" class="sub-text"></div>
-                    <div id="prof-ff-uid" class="sub-text style-badge margin-top">FF UID: Not Verified</div>
-                    <div id="prof-wa" class="sub-text style-badge">WhatsApp: Not Verified</div>
-                </div>
-
-                <div id="card-user-verify" class="glass-card margin-top">
-                    <h3>Account Verification</h3>
-                    <form id="form-user-verify" class="margin-top">
-                        <div class="input-group">
-                            <label>Free Fire UID</label>
-                            <input type="text" id="input-verify-uid" placeholder="Enter Free Fire UID" required>
-                        </div>
-                        <div class="input-group">
-                            <label>WhatsApp Number</label>
-                            <input type="text" id="input-verify-wa" placeholder="017xxxxxxxx" required>
-                        </div>
-                        <button id="btn-save-verify" type="submit" class="btn-action full-width">Save & Verify Profile</button>
-                    </form>
+                    <div id="prof-tg-status" class="sub-text style-badge margin-top">Telegram Verified User</div>
                 </div>
 
                 <div class="glass-card margin-top">
@@ -148,7 +134,7 @@
                         <li>প্লেয়ারের আইডি লেভেল 40 হতে হবে না হলে রুমে জয়েন করতে পারবে না।</li>
                         <li>অবশ্যই বাংলাদেশের সার্ভারের প্লেয়ার হতে হবে।</li>
                         <li>কোনো থার্ড পার্টি অ্যাপস, হ্যাক বা কোনো প্যানেল ইউজারদের আইডি পার্মানেন্ট ব্যান করে দেওয়া হবে।</li>
-                        <li>Banned না হওয়া ফ্রি ফায়ার UID অথবা হোয়াটসঅ্যাপ নম্বর দিয়ে অ্যাকাউন্ট ভেরিফাই করতে হবে।</li>
+                        <li>একটি টুর্নামেন্টে একজন প্লেয়ার একাধিক স্কোয়াডে জয়েন করতে পারবে না।</li>
                     </ul>
                 </div>
             </section>
@@ -184,7 +170,7 @@
                         <div class="input-group"><label>Task Description</label><input type="text" id="cr-task-desc" required></div>
                         <div class="input-group"><label>Task Link</label><input type="url" id="cr-task-link" required></div>
                         <div class="input-group"><label>Rules</label><textarea id="cr-rules" required></textarea></div>
-                        <div class="input-group"><label>Start Time (Text)</label><input type="text" id="cr-time" placeholder="Today 9:00 PM" required></div>
+                        <div class="input-group"><label>Start Time (ISO/Format e.g., 2026-08-04T21:00 or Today 9:00 PM)</label><input type="text" id="cr-time" placeholder="Today 9:00 PM" required></div>
                         <button type="submit" class="btn-action full-width margin-top">Publish Tournament</button>
                     </form>
                 </div>
@@ -247,7 +233,7 @@
                 <div class="glass-card margin-top">
                     <h2>Manage Users & Search System</h2>
                     <div class="input-group margin-top">
-                        <label>Search User (FF UID / TG ID / Name)</label>
+                        <label>Search User (TG ID / Name)</label>
                         <input type="text" id="adm-user-search" placeholder="Type to search..." oninput="app.filterAdminUsers()">
                     </div>
                     <div id="adm-users-list" class="card-grid margin-top"></div>
@@ -268,5 +254,4 @@
     <script src="app.js"></script>
 </body>
 </html>
-
 
