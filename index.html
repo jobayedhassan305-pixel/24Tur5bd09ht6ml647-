@@ -56,12 +56,12 @@
                         <input type="text" id="join-sq-code" placeholder="e.g. SQ-A1B2C3">
                     </div>
                     <div class="input-group">
-                        <label>In-Game Nickname</label>
-                        <input type="text" id="join-p-nick" placeholder="In-Game Nickname">
+                        <label>Free Fire Style Name <span class="required-star">*</span></label>
+                        <input type="text" id="join-p-nick" placeholder="Enter In-Game Style Name" required>
                     </div>
                     <div class="input-group">
-                        <label>Free Fire Game UID</label>
-                        <input type="text" id="join-p-uid" placeholder="Free Fire Game UID">
+                        <label>Free Fire Game UID (Optional)</label>
+                        <input type="text" id="join-p-uid" placeholder="Free Fire Game UID (Optional)">
                     </div>
                     <button class="btn-action full-width margin-top" onclick="app.submitJoinSquad()">Join Squad Lobby</button>
                 </div>
@@ -76,19 +76,43 @@
                 <div id="registered-squads-box" class="glass-card margin-top hidden"></div>
 
                 <div class="glass-card margin-top">
-                    <div class="card-header">Register Squad (Leader Only)</div>
+                    <div class="card-header">Register Squad (Full 4-Players Registration)</div>
                     <form id="form-leader-registration">
                         <input type="hidden" id="reg-tournament-id">
                         <div class="input-group">
                             <label>Squad Name</label>
                             <input type="text" id="reg-squad-name" placeholder="Enter Squad Name" required>
                         </div>
+                        
+                        <!-- Player 1 (Leader) -->
                         <div class="player-box">
-                            <span class="player-title">Leader Details</span>
-                            <input type="text" id="p1-nick" placeholder="FF Nickname" required>
-                            <input type="text" id="p1-id" placeholder="FF Game UID" required>
+                            <span class="player-title">Leader (Player 1)</span>
+                            <input type="text" id="p1-nick" placeholder="FF Style Name *" required>
+                            <input type="text" id="p1-id" placeholder="FF Game UID (Optional)">
                         </div>
-                        <button type="submit" class="btn-action full-width margin-top">Create Squad & Register</button>
+
+                        <!-- Player 2 -->
+                        <div class="player-box">
+                            <span class="player-title">Player 2</span>
+                            <input type="text" id="p2-nick" placeholder="FF Style Name (Optional)">
+                            <input type="text" id="p2-id" placeholder="FF Game UID (Optional)">
+                        </div>
+
+                        <!-- Player 3 -->
+                        <div class="player-box">
+                            <span class="player-title">Player 3</span>
+                            <input type="text" id="p3-nick" placeholder="FF Style Name (Optional)">
+                            <input type="text" id="p3-id" placeholder="FF Game UID (Optional)">
+                        </div>
+
+                        <!-- Player 4 -->
+                        <div class="player-box">
+                            <span class="player-title">Player 4</span>
+                            <input type="text" id="p4-nick" placeholder="FF Style Name (Optional)">
+                            <input type="text" id="p4-id" placeholder="FF Game UID (Optional)">
+                        </div>
+
+                        <button type="submit" class="btn-action full-width margin-top">Create Squad & Register All</button>
                     </form>
                 </div>
             </section>
@@ -167,10 +191,20 @@
                         <div class="input-group"><label>Title</label><input type="text" id="cr-title" required></div>
                         <div class="input-group"><label>Match Code</label><input type="text" id="cr-code" placeholder="MATCH-01" required></div>
                         <div class="input-group"><label>Prize Pool</label><input type="text" id="cr-prize" placeholder="1000 Diamond" required></div>
+                        
+                        <div class="input-group">
+                            <label>Tournament Task Type</label>
+                            <select id="cr-task-type">
+                                <option value="LINK">🌐 Visit Website Link (Sub-Admin / All)</option>
+                                <option value="MONETAG_AD">🎬 Monetag 24h Unlock Ad Task (Main Admin Only)</option>
+                            </select>
+                        </div>
+
                         <div class="input-group"><label>Task Description</label><input type="text" id="cr-task-desc" required></div>
-                        <div class="input-group"><label>Task Link</label><input type="url" id="cr-task-link" required></div>
+                        <div class="input-group" id="cr-task-link-group"><label>Task Link URL</label><input type="url" id="cr-task-link"></div>
+                        
                         <div class="input-group"><label>Rules</label><textarea id="cr-rules" required></textarea></div>
-                        <div class="input-group"><label>Start Time (ISO/Format e.g., 2026-08-04T21:00 or Today 9:00 PM)</label><input type="text" id="cr-time" placeholder="Today 9:00 PM" required></div>
+                        <div class="input-group"><label>Start Time (e.g., Today 9:00 PM)</label><input type="text" id="cr-time" placeholder="Today 9:00 PM" required></div>
                         <button type="submit" class="btn-action full-width margin-top">Publish Tournament</button>
                     </form>
                 </div>
