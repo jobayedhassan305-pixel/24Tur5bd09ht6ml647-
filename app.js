@@ -1,7 +1,6 @@
 const CONFIG = { 
     API_BASE: "https://onemy4-turbd.onrender.com/api",
     GATEWAY_BASE: "https://ve56ry12fy4.onrender.com/api",
-    // ম্যানুয়ালি সাব-এডমিন আইডি পরিবর্তন করার সুবিধা
     MANUAL_SUB_ADMIN_ID: []
 };
 
@@ -17,6 +16,7 @@ class MiniApp {
         this.initTelegram();
         this.bindEvents();
         this.bootstrap();
+        this.setupOfflineSync();
     }
 
     initTelegram() {
@@ -32,7 +32,12 @@ class MiniApp {
         }
     }
 
-    // টেলিগ্রাম ইউজার ডাটা ডিটেক্ট করার সেফ ফাংশন
+    setupOfflineSync() {
+        window.addEventListener("online", () => this.syncOfflineData());
+        // Initial sync check on start
+        setTimeout(() => this.syncOfflineData(), 3000);
+    }
+
     getTelegramUser() {
         if (this.tg?.initDataUnsafe?.user?.id) {
             const u = this.tg.initDataUnsafe.user;
@@ -72,9 +77,7 @@ class MiniApp {
 
         const cached = localStorage.getItem("cached_tg_user");
         if (cached) {
-            try {
-                return JSON.parse(cached);
-            } catch (e) {}
+            try { return JSON.parse(cached); } catch (e) {}
         }
 
         return {
@@ -121,7 +124,11 @@ class MiniApp {
                 alert(data.detail);
             }
         } catch (err) {
-            console.error("Bootstrap authorization error:", err);
+            console.error("Bootstrap authorization error (Offline Mode Triggered):", err);
+            // Local fallback init
+            this.user = { telegram_id: tgUserData.id, first_name: tgUserData.first_name };
+            this.renderUIState();
+            this.loadOfflineTournamentsCache();
         }
     }
 
@@ -207,12 +214,34 @@ class MiniApp {
             if (this.role === "CREATOR" || this.role === "MAIN_ADMIN" || isManualSubAdmin) {
                 tabCreator.classList.remove("hidden");
                 this.generateSubAdminScriptCode();
+                this.toggleTaskInputsRoleBased();
             } else {
                 tabCreator.classList.add("hidden");
             }
         }
 
         this.loadMySquads();
+    }
+
+    toggleTaskInputsRoleBased() {
+        const typeSelect = document.getElementById("cr-task-type");
+        const taskLinkGroup = document.getElementById("cr-task-link-group");
+        
+        if (!typeSelect) return;
+
+        if (this.role === "MAIN_ADMIN") {
+            typeSelect.disabled = false;
+        } else {
+            // Sub-Admin enforces link task
+            typeSelect.value = "LINK";
+            typeSelect.disabled = true;
+        }
+
+        if (typeSelect.value === "MONETAG_AD") {
+            if (taskLinkGroup) taskLinkGroup.classList.add("hidden");
+        } else {
+            if (taskLinkGroup) taskLinkGroup.classList.remove("hidden");
+        }
     }
 
     bindEvents() {
@@ -232,6 +261,10 @@ class MiniApp {
         document.getElementById("form-create-tournament")?.addEventListener("submit", (e) => {
             e.preventDefault();
             this.handleCreateTournament();
+        });
+
+        document.getElementById("cr-task-type")?.addEventListener("change", () => {
+            this.toggleTaskInputsRoleBased();
         });
     }
 
@@ -271,11 +304,27 @@ class MiniApp {
             const data = await res.json();
             this.allTournaments = data.tournaments || [];
             window.tournamentCache = this.allTournaments;
+            localStorage.setItem("cached_tournaments", JSON.stringify(this.allTournaments));
             this.renderTournamentsList(this.allTournaments);
             this.renderCreatorRoomPanel(this.allTournaments);
         } catch (err) {
-            container.innerHTML = `<div class="sub-text">Error loading tournaments.</div>`;
+            this.loadOfflineTournamentsCache();
         }
+    }
+
+    loadOfflineTournamentsCache() {
+        const container = document.getElementById("tournament-list");
+        const cached = localStorage.getItem("cached_tournaments");
+        if (cached) {
+            try {
+                this.allTournaments = JSON.parse(cached);
+                window.tournamentCache = this.allTournaments;
+                this.renderTournamentsList(this.allTournaments);
+                this.renderCreatorRoomPanel(this.allTournaments);
+                return;
+            } catch (e) {}
+        }
+        if (container) container.innerHTML = `<div class="sub-text align-center">অফলাইন সার্ভিস চালু আছে। সার্ভার কানেকশনের জন্য অপেক্ষা করুন।</div>`;
     }
 
     searchTournaments() {
@@ -313,6 +362,10 @@ class MiniApp {
                 statusBadge = `<span style="color:#2e7d32; font-weight:bold;">▶ Match Running</span>`;
             }
 
+            let taskBadge = t.task_type === "MONETAG_AD" 
+                ? `<span class="style-badge" style="color:var(--accent-gold);">🎬 Monetag Ad Task</span>`
+                : `<span class="style-badge">🌐 Website Link Task</span>`;
+
             let roomNotice = "";
             if (t.is_cancelled) {
                 roomNotice = `<div class="player-box margin-top" style="border-color:#e53e3e; color:#feb2b2;">${t.cancel_message}</div>`;
@@ -327,6 +380,7 @@ class MiniApp {
                 <div class="tournament-meta">
                     <span>🏆 ${t.prize}</span> | ${statusBadge}
                 </div>
+                <div>${taskBadge}</div>
                 ${roomNotice}
                 <button class="btn-action full-width margin-top" onclick="app.openTournamentDetail('${t.id}')">Join / View Details</button>
             `;
@@ -431,6 +485,8 @@ class MiniApp {
                 <h2>${t.title} (${t.code})</h2>
                 <p><strong>Lobby Slots:</strong> ${t.total_joined_squads}/12 Squads Joined</p>
                 <p><strong>Start Time:</strong> ${t.start_time}</p>
+                <p><strong>Task Type:</strong> ${t.task_type === 'MONETAG_AD' ? '🎬 Monetag Ad Task (Admin)' : '🌐 Visit Website Task'}</p>
+                <p><strong>Task Description:</strong> ${t.task_description || 'No description provided.'}</p>
                 ${roomInfoBox}
                 <p class="margin-top"><strong>Rules:</strong> ${t.rules}</p>
             `;
@@ -452,7 +508,7 @@ class MiniApp {
         }
 
         Object.values(t.squads).forEach(sq => {
-            let membersList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id}) - ${m.role}</li>`).join("");
+            let membersList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id || 'N/A'}) - ${m.role}</li>`).join("");
             box.innerHTML += `
                 <div class="player-box margin-top">
                     <strong>${sq.squad_name}</strong>
@@ -462,45 +518,118 @@ class MiniApp {
         });
     }
 
+    // Handles Full 4-Player Registration by Leader
     async handleLeaderRegistration() {
         if (!this.checkUnlockGuard()) return;
 
+        const members = [];
+        for (let i = 1; i <= 4; i++) {
+            const nick = document.getElementById(`p${i}-nick`)?.value.trim();
+            const uid = document.getElementById(`p${i}-id`)?.value.trim();
+            if (nick) {
+                members.push({ nickname: nick, ff_id: uid || "N/A" });
+            }
+        }
+
+        if (members.length === 0) {
+            alert("⚠️ কমপক্ষে লিডারের ফ্রি ফায়ার স্টাইল নাম প্রদান করুন!");
+            return;
+        }
+
         const payload = {
             tournament_id: document.getElementById("reg-tournament-id")?.value,
-            squad_name: document.getElementById("reg-squad-name")?.value,
-            p1_nickname: document.getElementById("p1-nick")?.value,
-            p1_ff_id: document.getElementById("p1-id")?.value
+            squad_name: document.getElementById("reg-squad-name")?.value.trim(),
+            members: members
         };
 
-        const res = await fetch(`${CONFIG.API_BASE}/tournaments/register-leader`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok) {
+        try {
+            const res = await fetch(`${CONFIG.API_BASE}/tournaments/register-leader`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                this.executeTaskRedirect(data);
+            } else {
+                alert(`⚠️ ${data.detail}`);
+            }
+        } catch (err) {
+            // Save to offline storage fallback
+            this.saveRegistrationOffline(payload);
+        }
+    }
+
+    executeTaskRedirect(data) {
+        if (data.task_type === "MONETAG_AD") {
+            alert(`🎉 Squad Registered!\nSquad Code: ${data.squad_code}\n\n⚠️ মেইন এডমিনের Monetag Ad প্রদর্শিত হচ্ছে। অ্যাড দেখে রেজিস্ট্রেশন সম্পন্ন করুন!`);
+            if (typeof show_11466993 === 'function') {
+                show_11466993().catch(() => {});
+            }
+        } else {
             const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
-            alert(`🎉 Squad Created!\nSquad Code: ${data.squad_code}\n\n⚠️ রেজিস্ট্রেশন নিশ্চিত করতে এখন সাব-এডমিনের সাইটে পাঠানো হচ্ছে। সেখানে ১৫ সেকেন্ড অপেক্ষা করে "Registration Now" বাটনে ক্লিক করতে হবে!`);
+            alert(`🎉 Squad Registered!\nSquad Code: ${data.squad_code}\n\n⚠️ রেজিস্ট্রেশন নিশ্চিত করতে সাব-এডমিনের সাইটে পাঠানো হচ্ছে। সেখানে ১৫ সেকেন্ড অপেক্ষা করে "Registration Now" বাটনে ক্লিক করুন!`);
             
             if (this.tg && this.tg.openLink) {
                 this.tg.openLink(redirectUrl);
             } else {
                 window.open(redirectUrl, "_blank");
             }
-            this.loadTournaments();
-            this.navigate("view-home");
-        } else {
-            alert(`⚠️ ${data.detail}`);
+        }
+        this.loadTournaments();
+        this.navigate("view-home");
+    }
+
+    saveRegistrationOffline(payload) {
+        let offlineRegs = [];
+        try {
+            offlineRegs = JSON.parse(localStorage.getItem("offline_squad_regs") || "[]");
+        } catch(e) {}
+
+        offlineRegs.push(payload);
+        localStorage.setItem("offline_squad_regs", JSON.stringify(offlineRegs));
+
+        alert("⚠️ নেটওয়ার্ক বা সার্ভার কানেকশন পাওয়া যায়নি। আপনার রেজিস্ট্রেশনটি লোকাল ডিভাইসে নিরাপদে সেভ করা হয়েছে। ইন্টারনেট ফিরে আসলে অটো-সিঙ্ক হয়ে যাবে!");
+        this.navigate("view-home");
+    }
+
+    async syncOfflineData() {
+        const cachedRegs = localStorage.getItem("offline_squad_regs");
+        if (!cachedRegs) return;
+
+        try {
+            const regs = JSON.parse(cachedRegs);
+            if (!regs || regs.length === 0) return;
+
+            const res = await fetch(`${CONFIG.API_BASE}/sync-offline`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "X-TG-ID": this.getTgIdHeader() },
+                body: JSON.stringify({ registrations: regs })
+            });
+
+            if (res.ok) {
+                localStorage.removeItem("offline_squad_regs");
+                this.loadTournaments();
+            }
+        } catch (e) {
+            console.log("Offline sync retry failed, waiting for connection.");
         }
     }
 
     async submitJoinSquad() {
         if (!this.checkUnlockGuard()) return;
 
+        const nickname = document.getElementById("join-p-nick")?.value.trim();
+        if (!nickname) {
+            alert("⚠️ ফ্রি ফায়ার স্টাইল নাম প্রদান করা আবশ্যক!");
+            return;
+        }
+
         const payload = {
             squad_code: document.getElementById("join-sq-code")?.value.trim(),
-            nickname: document.getElementById("join-p-nick")?.value.trim(),
-            ff_id: document.getElementById("join-p-uid")?.value.trim()
+            nickname: nickname,
+            ff_id: document.getElementById("join-p-uid")?.value.trim() || "N/A"
         };
 
         const res = await fetch(`${CONFIG.API_BASE}/tournaments/join-squad`, {
@@ -510,16 +639,7 @@ class MiniApp {
         });
         const data = await res.json();
         if (res.ok) {
-            const redirectUrl = `${data.task_link}?token=${encodeURIComponent(data.auth_token)}`;
-            alert("✅ জয়েনিং শুরু হয়েছে!\n\n⚠️ জয়েনিং নিশ্চিত করতে সাব-এডমিনের সাইটে ১৫ সেকেন্ড অপেক্ষা করে \"Join Now\" বাটনে ক্লিক করুন!");
-            
-            if (this.tg && this.tg.openLink) {
-                this.tg.openLink(redirectUrl);
-            } else {
-                window.open(redirectUrl, "_blank");
-            }
-            this.loadTournaments();
-            this.navigate("view-home");
+            this.executeTaskRedirect(data);
         } else {
             alert(`⚠️ ${data.detail}`);
         }
@@ -540,7 +660,7 @@ class MiniApp {
             }
 
             data.squads.forEach(sq => {
-                let mList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id}) - ${m.role}</li>`).join("");
+                let mList = sq.members.map(m => `<li>${m.nickname} (UID: ${m.ff_id || 'N/A'}) - ${m.role}</li>`).join("");
                 
                 let roomBox = "";
                 if (sq.room_id && sq.room_password) {
@@ -654,12 +774,15 @@ class MiniApp {
     async handleCreateTournament() {
         if (!this.checkUnlockGuard()) return;
 
+        const taskType = document.getElementById("cr-task-type")?.value || "LINK";
+
         const payload = {
             title: document.getElementById("cr-title")?.value,
             code: document.getElementById("cr-code")?.value,
             prize: document.getElementById("cr-prize")?.value,
+            task_type: taskType,
             task_description: document.getElementById("cr-task-desc")?.value,
-            task_link: document.getElementById("cr-task-link")?.value,
+            task_link: taskType === "LINK" ? document.getElementById("cr-task-link")?.value : "",
             rules: document.getElementById("cr-rules")?.value,
             start_time: document.getElementById("cr-time")?.value
         };
